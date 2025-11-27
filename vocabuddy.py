@@ -39,7 +39,7 @@ def upload_file():
             messagebox.showerror("Error!", "Only ten words are allowed!")
             return
         user_words[:] = words
-        messagebox.showinfo( "Success", "File upload successful!")
+        messagebox.showinfo( "Success", "File upload successfully!")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to read: {e}")
 
@@ -60,7 +60,7 @@ def upload_image():
             messagebox.showerror("Error", "Only ten words are allowed!")
             return
         user_words[:] = words
-        messagebox.showinfo("Success", "OCR upload successful!")
+        messagebox.showinfo("Success", "OCR uploaded successfully!")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to read: {e}")
 
@@ -75,7 +75,7 @@ def start_game():
     words = [w.strip() for w in words_input.split() if w.strip()]
     
     if len(words) != 10:
-        messagebox.showerror("错误", "请输入正好 10 个单词")
+        messagebox.showerror("Error", "Only ten words are allowed")
         return
     
     user_words[:] = words
@@ -113,14 +113,14 @@ def generate_game():
 
 # Tkinter GUI setup
 root = tk.Tk()
-root.title("单词练习生成器")
+root.title("Vocabuddy")
 
-tk.Label(root, text="请输入10个单词（用空格或换行分开）:").pack(pady=5)
+tk.Label(root, text="Input 10 words(sperating with whitespace/ in another line:").pack(pady=5)
 text_box = tk.Text(root, height=10, width=30)
 text_box.pack(pady=5)
 
-tk.Button(root, text="上传文件 (txt/csv/docx/pdf)", command=upload_file).pack(pady=5)
-tk.Button(root, text="上传图片", command=upload_image).pack(pady=5)
-tk.Button(root, text="开始游戏", command=start_game).pack(pady=10)
+tk.Button(root, text="upload a file (txt/csv/docx/pdf)", command=upload_file).pack(pady=5)
+tk.Button(root, text="upload a picture", command=upload_image).pack(pady=5)
+tk.Button(root, text="Game Start", command=start_game).pack(pady=10)
 
 root.mainloop()
