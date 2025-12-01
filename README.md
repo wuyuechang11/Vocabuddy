@@ -1,4 +1,5 @@
-# Vocabuddy-A GUI-based English vocabulary learning application built with Python Tkinter, supporting file upload, OCR text extraction, translation, and interactive word games.
+# Vocabuddy
+A GUI-based English vocabulary learning application built with Python Tkinter, supporting file upload, OCR text extraction, translation, and interactive word games.
 our final project for programming EDUC 5913. We are going to create an online platform for English vocabulary practice. 
 
 Project Overview
