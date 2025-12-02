@@ -10,6 +10,8 @@ A Matching Game (English ↔ Chinese)
 A Scrambled-Letters Game (word unscrambling)
 [Weishan need to add]
 
+Features
+
 Input
 
 Output
