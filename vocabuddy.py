@@ -9,8 +9,8 @@ import requests
 import hashlib
 
 # ------------------- Baidu Translate API -------------------
-APPID = "20251130002509027"
-KEY = "GtRhonqtdzGpchMRJuCq"
+APPID = ""
+KEY = ""
 
 def baidu_translate(q, from_lang="auto", to_lang="zh"):
     if not q or not isinstance(q, str):
