@@ -65,27 +65,28 @@ def scramble_word(w):
     return scrambled
 
 # ------------------- Matching Game -------------------
-def generate_matching_game(user_words):
-    word_en, word_cn, mapping = [], [], {}
-    for w in user_words:
-        cn = baidu_translate(w)
-        word_en.append(w)
-        word_cn.append(cn)
-        mapping[w] = cn
-    en_shuffled = word_en[:]
-    cn_shuffled = word_cn[:]
-    random.shuffle(en_shuffled)
-    random.shuffle(cn_shuffled)
-    return en_shuffled, cn_shuffled, mapping
+# ------------------- Matching Game -------------------
+def prepare_matching_game():
+    if "matching_words_generated" not in st.session_state or not st.session_state.matching_words_generated:
+        en_list, cn_list, mapping = generate_matching_game(st.session_state.user_words)
+        st.session_state.en_list = en_list
+        st.session_state.cn_list = cn_list
+        st.session_state.mapping = mapping
+        st.session_state.matching_words_generated = True
+
 
 def play_matching_game():
+    prepare_matching_game()
+
+    en_list = st.session_state.en_list
+    cn_list = st.session_state.cn_list
+    mapping = st.session_state.mapping
+
     if "matching_answers" not in st.session_state:
         st.session_state.matching_answers = {}
-        st.session_state.matching_score = 0
-
-    en_list, cn_list, mapping = generate_matching_game(st.session_state.user_words)
 
     st.subheader("Match English words with their Chinese meaning")
+
     for en_word in en_list:
         st.session_state.matching_answers[en_word] = st.selectbox(
             f"{en_word} ->",
@@ -98,18 +99,21 @@ def play_matching_game():
         for w in en_list:
             if st.session_state.matching_answers[w] == mapping[w]:
                 score += 1
-        st.session_state.matching_score = score
+
         st.success(f"You scored: {score}/{len(en_list)}")
 
-        # show the correct mapping
         df = pd.DataFrame({
             "Word": en_list,
             "Correct Meaning": [mapping[w] for w in en_list],
             "Your Answer": [st.session_state.matching_answers[w] for w in en_list],
-            "Correct?": [st.session_state.matching_answers[w] == mapping[w] for w in en_list]
+            "Correct?": [
+                st.session_state.matching_answers[w] == mapping[w]
+                for w in en_list
+            ]
         })
         st.subheader("Your results")
         st.table(df)
+
 
 # ------------------- Streamlit Design -------------------
 st.title("Hi, Welcome to Vocabuddy")
@@ -161,6 +165,7 @@ if st.session_state.user_words and len(st.session_state.user_words) == 10:
 
     if st.button("Start Game"):
         st.session_state.game_started = True
+        st.session_state.matching_words_generated = False
         # reset Scramble Game
         st.session_state.scramble_index = 0
         st.session_state.scramble_score = 0
