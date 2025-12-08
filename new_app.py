@@ -10,8 +10,8 @@ import hashlib
 import io
 
 # ------------------- Baidu Translate API -------------------
-APPID = ""  # <- 在此填入你的 APPID
-KEY = ""    # <- 在此填入你的 KEY
+APPID = "20251130002509027"  # <- 在此填入你的 APPID
+KEY = "GtRhonqtdzGpchMRJuCq"    # <- 在此填入你的 KEY
 
 def baidu_translate(q, from_lang="auto", to_lang="zh"):
     """Translate q using Baidu Translate. Returns q itself on failure."""
