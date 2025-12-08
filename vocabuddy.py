@@ -1,18 +1,16 @@
-# import tkinter to visualize the GUI
-# import pytesseract for OCR functionality 
-import tkinter as tk
-from tkinter import filedialog, messagebox, scrolledtext
+import streamlit as st
+import random
+import pandas as pd
 import pytesseract
 from PIL import Image
 import docx
 import PyPDF2
 import requests
 import hashlib
-import random
 
 # ------------------- Baidu Translate API -------------------
-APPID = "ID"
-KEY = "Key"
+APPID = "20251130002509027"
+KEY = "GtRhonqtdzGpchMRJuCq"
 
 def baidu_translate(q, from_lang="auto", to_lang="zh"):
     if not q or not isinstance(q, str):
@@ -32,178 +30,140 @@ def baidu_translate(q, from_lang="auto", to_lang="zh"):
     except Exception as e:
         return f"Request failed: {str(e)}"
 
-user_words = []
+# ------------------- Reading files -------------------
+def read_file(file):
+    words = []
+    if file.name.endswith((".txt", ".csv")):
+        content = file.read().decode("utf-8")
+        words = content.split()
+    elif file.name.endswith(".docx"):
+        doc = docx.Document(file)
+        for para in doc.paragraphs:
+            words += para.text.split()
+    elif file.name.endswith(".pdf"):
+        reader = PyPDF2.PdfReader(file)
+        for page in reader.pages:
+            text = page.extract_text()
+            if text:
+                words += text.split()
+    return [w.strip() for w in words if w.strip()]
 
-# ------------------- function of upload a file-------------------
-# make sure it accepts different types of files
-def upload_file():
-    global user_words
-    file_path = filedialog.askopenfilename(filetypes=[("All supported","*.txt *.csv *.docx *.pdf")])
-    if not file_path:
-        return
-    try:
-        words = []
-        if file_path.endswith((".txt",".csv")):
-            with open(file_path, 'r', encoding='utf-8') as f:
-                words = f.read().split()
-        elif file_path.endswith(".docx"):
-            doc = docx.Document(file_path)
-            for para in doc.paragraphs:
-                words += para.text.split()
-        elif file_path.endswith(".pdf"):
-            with open(file_path, 'rb') as f:
-                reader = PyPDF2.PdfReader(f)
-                for page in reader.pages:
-                    words += page.extract_text().split()
-        words = [w.strip() for w in words if w.strip()]
-        if len(words) != 10:
-            messagebox.showerror("Error", "Please provide exactly 10 words!")
-            return
-        user_words[:] = words
-        text_box.delete("1.0", tk.END)
-        text_box.insert(tk.END, " ".join(words))
-        messagebox.showinfo("Success", "File uploaded successfully!")
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to read file: {e}")
+# ------------------- reading from images -------------------
+def read_image(image_file):
+    text = pytesseract.image_to_string(Image.open(image_file))
+    words = [w.strip() for w in text.split() if w.strip()]
+    return words
 
-# ------------------- Upload a picture(OCR) -------------------
-# make sure it accepts different types of pictures
-def upload_image():
-    global user_words
-    img_path = filedialog.askopenfilename(filetypes=[("Image files","*.png *.jpg *.jpeg *.bmp *.tiff *.tif")])
-    if not img_path:
-        return
-    try:
-        text = pytesseract.image_to_string(Image.open(img_path))
-        words = [w.strip() for w in text.split() if w.strip()]
-        if len(words) != 10:
-            messagebox.showerror("Error", "Only ten words are allowed!")
-            return
-        user_words[:] = words
-        text_box.delete("1.0", tk.END)
-        text_box.insert(tk.END, " ".join(words))
-        messagebox.showinfo("Success", "OCR upload successful!")
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to read image: {e}")
-
-# ------------------- choose game mode -------------------
-def start_game():
-    global user_words
-    if not user_words:
-        words_input = text_box.get("1.0", tk.END).strip()
-        words = [w.strip() for w in words_input.split() if w.strip()]
-        if len(words) != 10:
-            messagebox.showerror("Error", "Please enter exactly 10 words!")
-            return
-        user_words[:] = words
-
-    # offer game mode choice
-    mode_window = tk.Toplevel(root)
-    mode_window.title("Choose Game Mode")
-    tk.Label(mode_window, text="Please choose your game mode:").pack(pady=10)
-
-    tk.Button(mode_window, text="Matching Game",
-              command=lambda: [mode_window.destroy(),
-                               play_matching_game(*generate_matching_game(user_words))]).pack(pady=5)
-    tk.Button(mode_window, text="Scrambled Letters Game",
-              command=lambda: [mode_window.destroy(),
-                               play_scrambled_game(user_words)]).pack(pady=5)
-
-# ------------------- the first game_matching game -------------------
-def generate_matching_game(user_words):
-    word_en, word_cn, mapping = [], [], {}
-    for w in user_words:
-        cn = baidu_translate(w)
-        word_en.append(w)
-        word_cn.append(cn)
-        mapping[w] = cn
-    en_shuffled = word_en[:]
-    cn_shuffled = word_cn[:]
-    random.shuffle(en_shuffled)
-    random.shuffle(cn_shuffled)
-    return en_shuffled, cn_shuffled, mapping
-
-def play_matching_game(en_list, cn_list, mapping):
-    game_win = tk.Toplevel(root)
-    game_win.title("Matching Game")
-    tk.Label(game_win, text="Match the words with their Chinese meaning:").pack(pady=5)
-
-    dropdowns = {}
-    for i, w in enumerate(en_list):
-        tk.Label(game_win, text=f"{i+1}. {w}").pack()
-        var = tk.StringVar()
-        var.set("Select the correct meaning")
-        dropdown = tk.OptionMenu(game_win, var, *cn_list)
-        dropdown.pack()
-        dropdowns[w] = var
-
-    def submit():
-        score = 0
-        for w in en_list:
-            if dropdowns[w].get() == mapping[w]:
-                score += 1
-        messagebox.showinfo("Score", f"You scored: {score}/{len(en_list)}")
-        game_win.destroy()
-
-    tk.Button(game_win, text="Finish", command=submit).pack(pady=10)
-
-# ------------------- the second game_scrambled letters game -------------------
-def play_scrambled_game(words):
-    game_win = tk.Toplevel(root)
-    game_win.title("Scrambled Letters Game")
-    tk.Label(game_win, text="Unscramble the word:").pack(pady=5)
-
-    random.shuffle(words)
-    index = tk.IntVar(value=0)
-    score = tk.IntVar(value=0)
-
-    prompt_label = tk.Label(game_win, text="")
-    prompt_label.pack(pady=10)
-    answer_entry = tk.Entry(game_win)
-    answer_entry.pack()
-
-    def scramble_word(w):
-        letters = list(w)
+# ------------------- define Scramble Game -------------------
+def scramble_word(w):
+    letters = list(w)
+    random.shuffle(letters)
+    scrambled = "".join(letters)
+    while scrambled == w:
         random.shuffle(letters)
         scrambled = "".join(letters)
-        while scrambled == w:
-            random.shuffle(letters)
-            scrambled = "".join(letters)
-        return scrambled
+    return scrambled
 
-    def update_question():
-        current = words[index.get()]
-        scrambled = scramble_word(current)
-        prompt_label.config(text=f"Word {index.get()+1}: {scrambled}")
+# ------------------- Streamlit Design -------------------
+st.title("Hi, Welcome Vocabuddy ")
 
-    def submit_answer():
-        user = answer_entry.get().strip().lower()
-        correct = words[index.get()].lower()
-        if user == correct:
-            score.set(score.get() + 1)
-        index.set(index.get() + 1)
-        if index.get() >= len(words):
-            messagebox.showinfo("Score", f"You scored: {score.get()}/{len(words)}")
-            game_win.destroy()
+# ------------------- session_state，a function to keep data in Streamlit -------------------
+if "user_words" not in st.session_state:
+    st.session_state.user_words = []
+if "game_started" not in st.session_state:
+    st.session_state.game_started = False
+if "game_mode" not in st.session_state:
+    st.session_state.game_mode = None
+
+# Status of Scrambled Game 
+if "scramble_index" not in st.session_state:
+    st.session_state.scramble_index = 0
+if "scramble_score" not in st.session_state:
+    st.session_state.scramble_score = 0
+if "scramble_answers" not in st.session_state:
+    st.session_state.scramble_answers = [""] * 10  # save users' answers
+if "scramble_scrambled" not in st.session_state:
+    st.session_state.scramble_scrambled = [""] * 10  # make sure the questions are out of order
+
+# ------------------- Users Input -------------------
+words_input = st.text_area("please enter 10 words（use space or enter in another line）")
+if words_input:
+    st.session_state.user_words = [w.strip() for w in words_input.split() if w.strip()]
+
+uploaded_file = st.file_uploader("upload a file(txt/csv/docx/pdf)", type=["txt","csv","docx","pdf"])
+if uploaded_file:
+    st.session_state.user_words = read_file(uploaded_file)
+
+uploaded_image = st.file_uploader("upload an image(OCR)", type=["png","jpg","jpeg","bmp","tiff","tif"])
+if uploaded_image:
+    st.session_state.user_words = read_image(uploaded_image)
+
+# ------------------- make the amount of 10 words-------------------
+if st.session_state.user_words:
+    st.write(f"The words: {st.session_state.user_words}")
+    if len(st.session_state.user_words) != 10:
+        st.warning("please upload only 10 words")
+
+# ------------------- choose game mode-------------------
+if st.session_state.user_words and len(st.session_state.user_words) == 10:
+    st.session_state.game_mode = st.selectbox("choose game mode", ["Scrambled Letters Game"], index=0)
+
+    if st.button("game start"):
+        st.session_state.game_started = True
+        st.session_state.scramble_index = 0
+        st.session_state.scramble_score = 0
+        st.session_state.scramble_answers = [""] * 10
+        st.session_state.scramble_scrambled = [""] * 10
+        random.shuffle(st.session_state.user_words)
+
+# ------------------- Scrambled Game -------------------
+if st.session_state.game_started and st.session_state.game_mode == "Scrambled Letters Game":
+    st.subheader("spell the word in correct order")
+    idx = st.session_state.scramble_index
+
+    if idx < len(st.session_state.user_words):
+        current_word = st.session_state.user_words[idx]
+
+        # make the word list out of order
+        if not st.session_state.scramble_scrambled[idx]:
+            scrambled = scramble_word(current_word)
+            st.session_state.scramble_scrambled[idx] = scrambled
         else:
-            answer_entry.delete(0, tk.END)
-            update_question()
+            scrambled = st.session_state.scramble_scrambled[idx]
 
-    tk.Button(game_win, text="Submit", command=submit_answer).pack(pady=10)
-    update_question()
+        # get users'answer and save data
+        def submit_answer():
+            answer = st.session_state.scramble_input  # get text_input 
+            st.session_state.scramble_answers[idx] = answer.strip()
+            # make sure it ignores upper/lower letters
+            if answer.strip().lower() == current_word.lower():
+                st.session_state.scramble_score += 1
+            st.session_state.scramble_index += 1
+            # clear input
+            st.session_state.scramble_input = ""
 
-# ------------------- Main program window -------------------
-root = tk.Tk()
-root.title("Vocabuddy")
+        # allow users to use Enter to upload input
+        st.text_input(
+            f"Word {idx + 1}: {scrambled}",
+            key="scramble_input",
+            on_change=submit_answer
+        )
 
-tk.Label(root, text="Please input 10 words（use whitespace or another line to spereate）:").pack(pady=5)
-text_box = tk.Text(root, height=10, width=40)
-text_box.pack(pady=5)
+    else:
+        st.success(f"Game finished your score: {st.session_state.scramble_score}/10")
 
-tk.Button(root, text="Upload a file (txt/csv/docx/pdf)", command=upload_file).pack(pady=5)
-tk.Button(root, text="Upload a Picture", command=upload_image).pack(pady=5)
-tk.Button(root, text="Game start", command=start_game).pack(pady=10)
+        # use a table to show the result of the game
+        data = {
+            "Word": st.session_state.user_words,
+            "Scrambled": st.session_state.scramble_scrambled,
+            "Your Answer": st.session_state.scramble_answers,
+            "Correct?": [
+                ua.strip().lower() == w.lower()
+                for ua, w in zip(st.session_state.scramble_answers, st.session_state.user_words)
+            ]
+        }
+        df = pd.DataFrame(data)
+        st.subheader("Your accuracy")
+        st.table(df)
 
-root.mainloop()
-
-
+        st.session_state.game_started = False
