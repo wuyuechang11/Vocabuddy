@@ -298,9 +298,3 @@ if st.session_state.game_started and st.session_state.game_mode == "Scrambled Le
 if st.session_state.game_started and st.session_state.game_mode == "Matching Game":
     play_matching_game()
 
-# ------------------- Footer / Tips -------------------
-st.markdown("---")
-st.markdown("**Tips & Notes:**")
-st.markdown("- If you want Baidu translation to work, fill `APPID` and `KEY` at the top of the file. Without keys, the app will use the English words as 'translations' (so Matching Game still works).")
-st.markdown("- OCR requires the Tesseract binary installed on the machine. On Streamlit Cloud, add `packages.txt` with `tesseract-ocr` and include `pytesseract` in `requirements.txt` when deploying.")
-st.markdown("- Network calls (translation) have a short timeout; if a request fails, the app will fall back to the original English word.")
