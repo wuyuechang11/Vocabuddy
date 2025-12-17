@@ -65,7 +65,7 @@ def set_bg_image(image):
 
 # ------------------ 使用背景图片 ------------------
 # 将图片放在项目文件夹里，例如 assets/background.png
-set_bg_image("assets/background.png")  # <-- 替换为你自己的图片
+set_bg_image("background.png")  # <-- 替换为你自己的图片
 
 # ------------------ Sidebar ------------------
 st.sidebar.title("🧩 Vocabuddy Menu")
