@@ -131,7 +131,3 @@ This project emphasizes collaboration as part of the course learning objectives:
 ## 📄 Academic Use & License
 
 This project is created for academic and educational purposes. It is not intended for commercial use. Licensing information can be added if the project is released publicly in the future.
-
----
-
-*Vocabuddy — Learn vocabulary through interaction, sound, and context.*
