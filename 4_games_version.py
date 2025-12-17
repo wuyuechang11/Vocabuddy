@@ -37,8 +37,8 @@ def generate_tts_audio(word):
 Facilitate English-to-Chinese translation for vocabulary reinforcement
 """
 
-APPID = "20251130002509027"  # <- 在此填入你的 APPID
-KEY = "GtRhonqtdzGpchMRJuCq"    # <- 在此填入你的 KEY
+APPID = "20251130002509027"  
+KEY = "GtRhonqtdzGpchMRJuCq"   
 
 def baidu_translate(q, from_lang="auto", to_lang="zh"):
     """Translate q using Baidu Translate. Returns q itself on failure."""
