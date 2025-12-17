@@ -21,11 +21,17 @@ st.set_page_config(
 )
 
 # ------------------ 背景图片 & 样式 ------------------
-def set_bg_image(image_path):
-    """通过CSS设置背景图片"""
-    with open(image_path, "rb") as f:
-        img_data = f.read()
-    encoded = base64.b64encode(img_data).decode()
+def set_bg_image(image):
+    """
+    设置页面背景
+    image: 本地路径或 BytesIO 对象
+    """
+    if isinstance(image, str):
+        with open(image, "rb") as f:
+            img_bytes = f.read()
+    else:
+        img_bytes = image.read()
+    encoded = base64.b64encode(img_bytes).decode()
     st.markdown(
         f"""
         <style>
@@ -57,8 +63,9 @@ def set_bg_image(image_path):
         unsafe_allow_html=True
     )
 
-# 替换成你的背景图片路径
-set_bg_image("background.png")  # <--- 这里替换为你想用的图片
+# ------------------ 使用背景图片 ------------------
+# 将图片放在项目文件夹里，例如 assets/background.png
+set_bg_image("assets/background.png")  # <-- 替换为你自己的图片
 
 # ------------------ Sidebar ------------------
 st.sidebar.title("🧩 Vocabuddy Menu")
