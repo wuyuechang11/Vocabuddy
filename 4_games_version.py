@@ -405,6 +405,14 @@ if st.session_state.user_words and len(st.session_state.user_words) == 10:
     # Start Game button: also reset per-game session flags
     if st.button("Start Game"):
         st.session_state.game_started = True
+        # reset Listen & Choose
+        st.session_state.listen_index = 0
+        st.session_state.listen_score = 0
+        st.session_state.listen_answers = [""] * 10
+
+        st.session_state.listen_word_order = st.session_state.user_words.copy()
+        random.shuffle(st.session_state.listen_word_order)
+
         # reset Scramble Game
         st.session_state.scramble_index = 0
         st.session_state.scramble_score = 0
@@ -477,10 +485,11 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
         st.session_state.listen_answers = [""] * 10
 
     idx = st.session_state.listen_index
+    listen_words = st.session_state.listen_word_order
     user_words = st.session_state.user_words
-
-    if idx < len(user_words):
-        current_word = user_words[idx]
+    
+    if idx < len(listen_words):
+        current_word = listen_words[idx]
         audio_file = generate_tts_audio(current_word)
 
         st.audio(audio_file, format="audio/mp3")
@@ -501,6 +510,7 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
             else:
                 st.error(f"Wrong. The correct answer was **{current_word}**.")
             st.session_state.listen_index += 1
+            st.rerun()
             
 
     else:
@@ -525,3 +535,5 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
 # ------------------- Fill-in-the-Blank -------------------
 if st.session_state.game_started and st.session_state.game_mode == "Fill-in-the-Blank":
     play_fill_in_the_blank()
+
+
