@@ -11,6 +11,11 @@ import io
 from gtts import gTTS
 import os
 
+# ------------------- TTS Audio Generation -------------------
+"""
+ use gTTS (Google Text-to-Speech) library to generate English pronunciation audio for vocabulary words 
+"""
+
 AUDIO_DIR = "audio"
 
 def ensure_audio_folder():
@@ -28,6 +33,10 @@ def generate_tts_audio(word):
     return audio_path
 
 # ------------------- Baidu Translate API -------------------
+"""
+Facilitate English-to-Chinese translation for vocabulary reinforcement
+"""
+
 APPID = "20251130002509027"  # <- 在此填入你的 APPID
 KEY = "GtRhonqtdzGpchMRJuCq"    # <- 在此填入你的 KEY
 
@@ -55,6 +64,11 @@ def baidu_translate(q, from_lang="auto", to_lang="zh"):
         return q
 
 # ------------------- Reading files -------------------
+"""
+Extract vocabulary words from various document formats
+Supported Formats: .txt, .csv, .docx, 
+"""
+
 def read_file(file):
     """Read words from txt/csv/docx/pdf file-like object (Streamlit UploadFile)."""
     words = []
@@ -81,6 +95,10 @@ def read_file(file):
     return [w.strip() for w in words if w.strip()]
 
 # ------------------- reading from images -------------------
+"""
+Extract English text from images through OCR
+"""
+
 def read_image(image_file):
     """Run OCR via pytesseract; return list of words. If OCR fails, return []."""
     try:
@@ -96,6 +114,16 @@ def read_image(image_file):
         return []
 
 # ------------------- Listen & Choose Game -------------------
+"""
+Develop listening comprehension and word recognition skills
+Game Mechanics:
+
+Presents audio pronunciation of target words
+Users select correct word from 10 options
+Tracks progress and scores in real-time
+Provides detailed performance analytics post-game
+"""
+
 def play_listen_game(user_words):
     st.header("🎧 Listen & Choose")
 
@@ -103,7 +131,7 @@ def play_listen_game(user_words):
         st.warning("Please provide exactly 10 words first.")
         return
 
-    # 初始化状态
+    # Initialization Phase
     if "listen_index" not in st.session_state:
         st.session_state.listen_index = 0
     if "listen_score" not in st.session_state:
@@ -111,33 +139,32 @@ def play_listen_game(user_words):
     if "listen_answers" not in st.session_state:
         st.session_state.listen_answers = [""] * 10
     if "audio_ready" not in st.session_state:
-        st.session_state.audio_ready = False  # 是否显示当前单词音频和选项
+        st.session_state.audio_ready = False  
 
     idx = st.session_state.listen_index
 
-    # 游戏未结束
+    # Game progression control
     if idx < len(user_words):
         current_word = user_words[idx]
 
-        # 播放下一个音频按钮
+        # Play Next Audio button
         if st.button("Play Next Audio"):
-            st.session_state.audio_ready = True  # 用户点击后显示音频和选项
+            st.session_state.audio_ready = True  
 
-        # 只有点击播放按钮后才显示音频和选择
+        # Conditional audio display
         if st.session_state.audio_ready:
-            # 播放音频
             audio_file = generate_tts_audio(current_word)
             st.audio(audio_file, format="audio/mp3")
             st.info(f"Word {idx + 1} of {len(user_words)}")
 
-            # 显示全部 10 个单词作为选项
+            # Single-choice interface with 10 options
             user_choice = st.radio(
                 "Which word did you hear?",
                 options=user_words,
                 key=f"listen_choice_{idx}"
             )
 
-            # 点击 Submit 后记录答案，并准备下一个单词
+            # Submission Process:
             if st.button("Submit", key=f"listen_submit_{idx}"):
                 st.session_state.listen_answers[idx] = user_choice
                 if user_choice == current_word:
@@ -146,13 +173,12 @@ def play_listen_game(user_words):
                 else:
                     st.error(f"Wrong. The correct answer was **{current_word}**.")
 
-                # 更新索引，准备下一个单词
+                # Reset state for next game
                 st.session_state.listen_index += 1
-                st.session_state.audio_ready = False  # 重置播放状态
+                st.session_state.audio_ready = False  
                 st.experimental_rerun()
 
     else:
-        # 游戏结束
         st.success(f"Game finished! Your score: {st.session_state.listen_score}/{len(user_words)}")
         df = pd.DataFrame({
             "Word": user_words,
@@ -164,7 +190,7 @@ def play_listen_game(user_words):
         st.subheader("Your results")
         st.table(df)
 
-        # 重置状态方便下次游戏
+        # Reset state for next game
         st.session_state.game_started = False
         st.session_state.listen_index = 0
         st.session_state.listen_score = 0
@@ -173,6 +199,16 @@ def play_listen_game(user_words):
 
     
 # ------------------- define Scramble Game -------------------
+"""
+Enhance spelling and word formation skills
+Core Algorithm:
+
+Randomly shuffles letters of target words
+Ensures scrambled version differs from original
+Validates user input against correct spelling
+Maintains sequential progression through vocabulary set
+"""
+
 def scramble_word(w):
     letters = list(w)
     if len(letters) <= 1:
@@ -188,6 +224,16 @@ def scramble_word(w):
     return scrambled
 
 # ------------------- Matching Game helpers -------------------
+"""
+ Reinforce semantic connections between English words and Chinese translations
+Design Features:
+
+Presents shuffled English words and Chinese translations
+Requires users to establish correct word-meaning pairs
+Employs optimized translation caching system
+Tracks matching accuracy and response patterns
+"""
+
 def generate_matching_game_once(user_words):
     """
     Generate (and translate) only once. Returns en_shuffled, cn_shuffled, mapping.
@@ -266,8 +312,18 @@ def play_matching_game():
         st.session_state.game_started = False
         
 # ------------------- Fill-in-the-Blank Game -------------------
+"""
+Develop contextual understanding and word application skills
+Implementation:
+
+Generates example sentences containing target vocabulary
+Creates contextually appropriate blanks for word insertion
+Presents randomized multiple-choice options
+Reinforces vocabulary usage in authentic sentence structures
+"""
+
 def get_example_sentence(word):
-    """生成示例句子，可以替换为词典API"""
+    """Generate example sentences (can be replaced with dictionary API)"""
     templates = [
         f"I really like the {word} in the park.",
         f"She bought a new {word} yesterday.",
@@ -284,7 +340,7 @@ def get_example_sentence(word):
     return random.choice(templates)
 
 def create_blank_sentence(word, sentence):
-    """将句子中的目标词挖空"""
+    """Create a sentence with the target word blanked out"""
     import re
     pattern = re.compile(rf"\b{re.escape(word)}\b", re.IGNORECASE)
     blanked = pattern.sub("_____", sentence)
@@ -293,13 +349,13 @@ def create_blank_sentence(word, sentence):
 def play_fill_in_the_blank():
     st.subheader("Fill-in-the-Blank Game")
 
-    # 用户输入的单词列表
+    # User-provided word list
     if "user_words" not in st.session_state or len(st.session_state.user_words) != 10:
         st.warning("Please provide exactly 10 words first.")
         return
     user_words = st.session_state.user_words
 
-    # 初始化 session_state
+    # Initialize session state
     if "fib_idx" not in st.session_state or st.session_state.get("fib_word_list") != user_words:
         st.session_state.fib_idx = 0
         st.session_state.fib_score = 0
@@ -320,7 +376,7 @@ def play_fill_in_the_blank():
     blanked_sentence = create_blank_sentence(current_word, current_sentence)
     st.write(f"Sentence {idx+1}: {blanked_sentence}")
 
-    # 选项：使用用户输入的 10 个单词随机顺序
+    # Options: randomly shuffled from user's 10 words
     import random
     options = user_words.copy()
     random.shuffle(options)
