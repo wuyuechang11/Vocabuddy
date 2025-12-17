@@ -58,7 +58,7 @@ def set_bg_image(image_path):
     )
 
 # 替换成你的背景图片路径
-set_bg_image("assets/background.png")  # <--- 这里替换为你想用的图片
+set_bg_image("background.png")  # <--- 这里替换为你想用的图片
 
 # ------------------ Sidebar ------------------
 st.sidebar.title("🧩 Vocabuddy Menu")
