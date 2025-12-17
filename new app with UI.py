@@ -10,8 +10,9 @@ import PyPDF2
 import requests
 from PIL import Image, UnidentifiedImageError
 import pytesseract
+import base64
 
-# ------------------ 页面配置 & 样式 ------------------
+# ------------------ 页面配置 ------------------
 st.set_page_config(
     page_title="Vocabuddy 🎉",
     page_icon="🧠",
@@ -19,30 +20,45 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.markdown("""
-<style>
-.stApp {
-    background: linear-gradient(120deg, #f0f8ff, #e6f7ff);
-    font-family: 'Comic Sans MS', sans-serif;
-}
-.stButton>button {
-    background-color: #4CAF50;
-    color: white;
-    border-radius: 12px;
-    height: 45px;
-    width: 200px;
-    font-size: 16px;
-    margin-top:5px;
-}
-.card {
-    background-color: #ffffffcc;
-    padding: 20px;
-    border-radius: 15px;
-    margin-bottom: 15px;
-    box-shadow: 3px 3px 15px #aaaaaa;
-}
-</style>
-""", unsafe_allow_html=True)
+# ------------------ 背景图片 & 样式 ------------------
+def set_bg_image(image_path):
+    """通过CSS设置背景图片"""
+    with open(image_path, "rb") as f:
+        img_data = f.read()
+    encoded = base64.b64encode(img_data).decode()
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/png;base64,{encoded}");
+            background-size: cover;
+            background-attachment: fixed;
+            font-family: 'Comic Sans MS', sans-serif;
+            color: #000000;
+        }}
+        .stButton>button {{
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 12px;
+            height: 45px;
+            width: 200px;
+            font-size: 16px;
+            margin-top:5px;
+        }}
+        .card {{
+            background-color: #ffffffcc;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            box-shadow: 3px 3px 15px #aaaaaa;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# 替换成你的背景图片路径
+set_bg_image("assets/background.png")  # <--- 这里替换为你想用的图片
 
 # ------------------ Sidebar ------------------
 st.sidebar.title("🧩 Vocabuddy Menu")
@@ -88,7 +104,7 @@ def baidu_translate(q, from_lang="auto", to_lang="zh"):
     except: pass
     return q
 
-# ------------------ Reading Files ------------------
+# ------------------ Reading Files & Images ------------------
 def read_file(file):
     words = []
     name = file.name.lower()
@@ -162,7 +178,6 @@ def generate_matching(user_words):
 if "user_words" not in st.session_state: st.session_state.user_words=[]
 if "game_started" not in st.session_state: st.session_state.game_started=False
 
-# 初始化 per-game session_state
 def init_game_state():
     st.session_state.scramble_index=0
     st.session_state.scramble_score=0
@@ -211,7 +226,7 @@ if st.button("Start Game") and len(st.session_state.user_words)==10:
 if st.session_state.get("game_started",False):
     st.markdown(f"## 🎮 {game_mode}")
 
-    # ------------- Scramble -------------
+    # ----------------- Scrambled Letters -----------------
     if game_mode=="Scrambled Letters Game":
         idx=st.session_state.get("scramble_index",0)
         user_words=st.session_state.user_words[:10]
@@ -231,7 +246,7 @@ if st.session_state.get("game_started",False):
             st.success(f"Game Finished! Score: {st.session_state.scramble_score}/10")
             st.balloons()
 
-    # ------------- Listen & Choose -------------
+    # ----------------- Listen & Choose -----------------
     elif game_mode=="Listen & Choose":
         idx=st.session_state.get("listen_index",0)
         user_words=st.session_state.user_words[:10]
@@ -254,7 +269,7 @@ if st.session_state.get("game_started",False):
             st.table(df)
             st.balloons()
 
-    # ------------- Fill-in-the-Blank -------------
+    # ----------------- Fill-in-the-Blank -----------------
     elif game_mode=="Fill-in-the-Blank":
         idx=st.session_state.get("fib_idx",0)
         user_words=st.session_state.user_words[:10]
@@ -273,7 +288,7 @@ if st.session_state.get("game_started",False):
             st.success(f"Game Finished! Score: {st.session_state.fib_score}/10")
             st.balloons()
 
-    # ------------- Matching Game -------------
+    # ----------------- Matching Game -----------------
     elif game_mode=="Matching Game":
         if not st.session_state.get("matching_words_generated",False):
             en_list, cn_list, mapping=generate_matching(st.session_state.user_words[:10])
