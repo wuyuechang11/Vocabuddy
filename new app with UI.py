@@ -162,12 +162,23 @@ def generate_matching(user_words):
 if "user_words" not in st.session_state: st.session_state.user_words=[]
 if "game_started" not in st.session_state: st.session_state.game_started=False
 
-# Per-game defaults
-for key in ["scramble_index","scramble_score","scramble_answers","scramble_scrambled",
-            "listen_index","listen_score","listen_answers",
-            "fib_idx","fib_score","fib_sentences",
-            "matching_answers","matching_words_generated"]:
-    if key not in st.session_state: st.session_state[key]=None
+# 初始化 per-game session_state
+def init_game_state():
+    st.session_state.scramble_index=0
+    st.session_state.scramble_score=0
+    st.session_state.scramble_answers=[""]*10
+    st.session_state.scramble_scrambled=[""]*10
+
+    st.session_state.listen_index=0
+    st.session_state.listen_score=0
+    st.session_state.listen_answers=[""]*10
+
+    st.session_state.fib_idx=0
+    st.session_state.fib_score=0
+    st.session_state.fib_sentences=[get_example_sentence(w) for w in st.session_state.user_words]
+
+    st.session_state.matching_words_generated=False
+    st.session_state.matching_answers={}
 
 # ------------------ Word Input ------------------
 st.markdown("## 1️⃣ Provide 10 words")
@@ -193,18 +204,7 @@ if st.session_state.user_words:
 # ------------------ Start Game ------------------
 if st.button("Start Game") and len(st.session_state.user_words)==10:
     st.session_state.game_started=True
-    st.session_state.scramble_index=0
-    st.session_state.scramble_score=0
-    st.session_state.scramble_answers=[""]*10
-    st.session_state.scramble_scrambled=[""]*10
-    st.session_state.listen_index=0
-    st.session_state.listen_score=0
-    st.session_state.listen_answers=[""]*10
-    st.session_state.fib_idx=0
-    st.session_state.fib_score=0
-    st.session_state.fib_sentences=[get_example_sentence(w) for w in st.session_state.user_words]
-    st.session_state.matching_words_generated=False
-    st.session_state.matching_answers={}
+    init_game_state()
     st.balloons()
 
 # ------------------ Game Rendering ------------------
@@ -213,14 +213,16 @@ if st.session_state.get("game_started",False):
 
     # ------------- Scramble -------------
     if game_mode=="Scrambled Letters Game":
-        idx=st.session_state.scramble_index
-        if idx<10:
-            word=st.session_state.user_words[idx]
+        idx=st.session_state.get("scramble_index",0)
+        user_words=st.session_state.user_words[:10]
+        if idx<10 and idx<len(user_words):
+            word=user_words[idx]
             scrambled=st.session_state.scramble_scrambled[idx] or scramble_word(word)
             st.session_state.scramble_scrambled[idx]=scrambled
             st.markdown(f'<div class="card">Word {idx+1}: <b>{scrambled}</b></div>', unsafe_allow_html=True)
             ans=st.text_input("Your Answer", key=f"scr_input_{idx}")
             if st.button("Submit", key=f"scr_submit_{idx}"):
+                st.session_state.scramble_answers[idx] = ans.strip()
                 if ans.strip().lower()==word.lower(): st.session_state.scramble_score+=1; st.success("🎉 Correct!")
                 else: st.error(f"❌ Wrong! Correct: {word}")
                 st.session_state.scramble_index+=1
@@ -228,16 +230,17 @@ if st.session_state.get("game_started",False):
         else:
             st.success(f"Game Finished! Score: {st.session_state.scramble_score}/10")
             st.balloons()
-    
+
     # ------------- Listen & Choose -------------
     elif game_mode=="Listen & Choose":
-        idx=st.session_state.listen_index
-        if idx<10:
-            word=st.session_state.user_words[idx]
+        idx=st.session_state.get("listen_index",0)
+        user_words=st.session_state.user_words[:10]
+        if idx<10 and idx<len(user_words):
+            word=user_words[idx]
             audio_file=generate_tts_audio(word)
             st.audio(audio_file)
             st.markdown(f'<div class="card">Word {idx+1}</div>', unsafe_allow_html=True)
-            choice=st.radio("Which word did you hear?", st.session_state.user_words, key=f"listen_{idx}")
+            choice=st.radio("Which word did you hear?", user_words, key=f"listen_{idx}")
             if st.button("Submit", key=f"listen_submit_{idx}"):
                 st.session_state.listen_answers[idx]=choice
                 if choice==word: st.session_state.listen_score+=1; st.success("🎉 Correct!")
@@ -246,20 +249,21 @@ if st.session_state.get("game_started",False):
                 st.experimental_rerun()
         else:
             st.success(f"Game Finished! Score: {st.session_state.listen_score}/10")
-            df=pd.DataFrame({"Word":st.session_state.user_words,"Your Answer":st.session_state.listen_answers,
-                             "Correct?":[a==w for a,w in zip(st.session_state.listen_answers,st.session_state.user_words)]})
+            df=pd.DataFrame({"Word":user_words,"Your Answer":st.session_state.listen_answers,
+                             "Correct?":[a==w for a,w in zip(st.session_state.listen_answers,user_words)]})
             st.table(df)
             st.balloons()
 
     # ------------- Fill-in-the-Blank -------------
     elif game_mode=="Fill-in-the-Blank":
-        idx=st.session_state.fib_idx
-        if idx<10:
-            word=st.session_state.user_words[idx]
+        idx=st.session_state.get("fib_idx",0)
+        user_words=st.session_state.user_words[:10]
+        if idx<10 and idx<len(user_words):
+            word=user_words[idx]
             sentence=st.session_state.fib_sentences[idx]
             blanked=create_blank_sentence(word,sentence)
             st.markdown(f'<div class="card">Sentence {idx+1}: {blanked}</div>', unsafe_allow_html=True)
-            choice=st.radio("Choose the correct word:", st.session_state.user_words, key=f"fib_{idx}")
+            choice=st.radio("Choose the correct word:", user_words, key=f"fib_{idx}")
             if st.button("Submit", key=f"fib_submit_{idx}"):
                 if choice.lower()==word.lower(): st.session_state.fib_score+=1; st.success("🎉 Correct!")
                 else: st.error(f"❌ Wrong! Correct: {word}")
@@ -271,8 +275,8 @@ if st.session_state.get("game_started",False):
 
     # ------------- Matching Game -------------
     elif game_mode=="Matching Game":
-        if not st.session_state.matching_words_generated:
-            en_list, cn_list, mapping=generate_matching(st.session_state.user_words)
+        if not st.session_state.get("matching_words_generated",False):
+            en_list, cn_list, mapping=generate_matching(st.session_state.user_words[:10])
             st.session_state.en_list=en_list
             st.session_state.cn_list=cn_list
             st.session_state.mapping=mapping
