@@ -445,11 +445,20 @@ if st.session_state.game_started and st.session_state.game_mode == "Matching Gam
     play_matching_game()
 
 # ------------------- Listen & Choose -------------------
+"""
+Develop listening comprehension and word recognition skills
+Game Mechanics:
+
+Present audio pronunciation of target words
+users select correct word from 10 options
+tracks progress and scores in real0time
+provides detailed performance analytics post-game
+"""
 
 if st.session_state.game_started and st.session_state.game_mode == "Listen & Choose":
     st.subheader("Listen & Choose Game")
 
-    # 初始化状态 - 确保有播放顺序和映射
+    # Initialization Phase
     if "listen_index" not in st.session_state:
         st.session_state.listen_index = 0
     if "listen_score" not in st.session_state:
@@ -457,34 +466,29 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
     if "listen_answers" not in st.session_state:
         st.session_state.listen_answers = [""] * 10
     if "listen_play_order" not in st.session_state:
-        # 创建随机播放顺序（打乱音频播放）
         st.session_state.listen_play_order = random.sample(st.session_state.user_words, len(st.session_state.user_words))
     if "listen_state_initialized" not in st.session_state:
         st.session_state.listen_state_initialized = True
 
     idx = st.session_state.listen_index
-    user_words = st.session_state.user_words  # 原始单词列表（正确答案参考）
+    user_words = st.session_state.user_words  
     
     if idx < len(user_words):
-        # 按随机顺序获取当前播放的单词
         current_word = st.session_state.listen_play_order[idx]
         audio_file = generate_tts_audio(current_word)
 
         st.audio(audio_file, format="audio/mp3")
         st.info(f"Word {idx + 1} of {len(user_words)}")
 
-        # 显示全部 10 个单词作为选项（保持原始顺序）
         user_choice = st.radio(
             "Which word did you hear?",
-            options=user_words,  # 选项保持原始顺序
+            options=user_words,  
             key=f"listen_choice_{idx}"
         )
 
         if st.button("Submit", key=f"listen_submit_{idx}"):
-            # 记录用户答案（按播放顺序）
             st.session_state.listen_answers[idx] = user_choice
             
-            # 检查答案
             if user_choice == current_word:
                 st.session_state.listen_score += 1
                 st.success("Correct! 🎉")
@@ -495,18 +499,12 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
             st.rerun()
             
     else:
-        # 游戏结束 - 重新映射答案到原始顺序
-        # 创建按原始顺序排列的答案列表
         original_order_answers = [""] * 10
         
-        # 将播放顺序的答案映射回原始顺序
         for i, played_word in enumerate(st.session_state.listen_play_order):
-            # 找到这个单词在原始列表中的位置
             original_index = user_words.index(played_word)
-            # 将用户对这个单词的答案放到正确的位置
             original_order_answers[original_index] = st.session_state.listen_answers[i]
         
-        # 重新计算分数以确保准确
         final_score = 0
         correct_list = []
         for i in range(len(user_words)):
@@ -515,10 +513,8 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
             if is_correct:
                 final_score += 1
         
-        # 显示最终分数
         st.success(f"Game finished! Your score: {final_score}/{len(user_words)}")
         
-        # 创建结果表格（按原始单词顺序）
         df = pd.DataFrame({
             "Word": user_words,
             "Your Answer": original_order_answers,
@@ -528,12 +524,11 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
         st.subheader("Your results")
         st.table(df)
 
-        # 重置状态，方便下次游戏
         st.session_state.game_started = False
         st.session_state.listen_index = 0
         st.session_state.listen_score = 0
         st.session_state.listen_answers = [""] * 10
-        # 清理播放顺序相关的状态
+        
         if "listen_play_order" in st.session_state:
             del st.session_state.listen_play_order
         if "listen_state_initialized" in st.session_state:
