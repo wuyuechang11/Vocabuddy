@@ -577,21 +577,25 @@ if st.session_state.game_started and st.session_state.game_mode == "Matching Gam
 import streamlit as st
 import pandas as pd
 
-# 假设你有一个生成TTS音频的函数
 def generate_tts_audio(word):
-    # 这里用占位符代替
+    # 占位音频 URL，替换成你的 TTS 生成函数
     return f"https://fake-audio-url/{word}.mp3"
 
-# 初始化状态
+# -------------------- 初始化 --------------------
 if "game_started" not in st.session_state:
     st.session_state.game_started = True
     st.session_state.game_mode = "Listen & Choose"
     st.session_state.user_words = ["apple", "banana", "orange", "grape"]  # 示例单词
-    st.session_state.listen_index = 0
-    st.session_state.listen_score = 0
-    st.session_state.listen_answers = [""] * len(st.session_state.user_words)
-    st.session_state.next_question = False  # 控制自动跳题
 
+# 使用 get() 保证默认值，避免 AttributeError
+st.session_state.listen_index = st.session_state.get("listen_index", 0)
+st.session_state.listen_score = st.session_state.get("listen_score", 0)
+st.session_state.listen_answers = st.session_state.get(
+    "listen_answers", [""] * len(st.session_state.user_words)
+)
+st.session_state.next_question = st.session_state.get("next_question", False)
+
+# -------------------- 游戏逻辑 --------------------
 if st.session_state.game_started and st.session_state.game_mode == "Listen & Choose":
     st.subheader("Listen & Choose Game")
 
@@ -604,14 +608,12 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
         st.audio(audio_file, format="audio/mp3")
         st.info(f"Word {idx + 1} of {len(user_words)}")
 
-        # radio 选择
         user_choice = st.radio(
             "Which word did you hear?",
             options=user_words,
             key=f"listen_choice_{idx}"
         )
 
-        # 提交按钮
         if st.button("Submit", key=f"listen_submit_{idx}") or st.session_state.next_question:
             st.session_state.listen_answers[idx] = user_choice
             if user_choice == current_word:
@@ -620,14 +622,12 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
             else:
                 st.error(f"Wrong. The correct answer was **{current_word}**.")
 
-            # 更新索引，准备下一题
             st.session_state.listen_index += 1
-            st.session_state.next_question = True  # 标记下一题
-            st.experimental_rerun()  # 强制刷新页面显示下一题
+            st.session_state.next_question = True
+            st.experimental_rerun()
 
     else:
         st.success(f"Game finished! Your score: {st.session_state.listen_score}/{len(user_words)}")
-
         df = pd.DataFrame({
             "Word": user_words,
             "Your Answer": st.session_state.listen_answers,
@@ -642,6 +642,7 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
         st.session_state.listen_score = 0
         st.session_state.listen_answers = [""] * len(user_words)
         st.session_state.next_question = False
+
 
         
 # ------------------- Fill-in-the-Blank  -------------------
