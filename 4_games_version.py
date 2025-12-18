@@ -84,6 +84,7 @@ def read_file(file):
     except Exception:
         # if any error reading, return empty list (caller can show warning)
         return []
+    return [w.strip() for w in words if w.strip()]
     
 
 # ------------------- reading from images -------------------
