@@ -579,21 +579,25 @@ import pandas as pd
 from gtts import gTTS
 import io
 
-# -------------------- 初始化 --------------------
+# -------------------- 安全初始化 --------------------
 if "game_started" not in st.session_state:
     st.session_state.game_started = True
+if "game_mode" not in st.session_state:
     st.session_state.game_mode = "Listen & Choose"
+if "user_words" not in st.session_state:
     st.session_state.user_words = ["apple", "banana", "orange", "grape"]  # 示例单词
+if "listen_index" not in st.session_state:
     st.session_state.listen_index = 0
+if "listen_score" not in st.session_state:
     st.session_state.listen_score = 0
+if "listen_answers" not in st.session_state:
     st.session_state.listen_answers = [""] * len(st.session_state.user_words)
+if "next_question" not in st.session_state:
     st.session_state.next_question = False
 
-# 安全获取 user_words
-user_words = st.session_state.get("user_words", [])
-st.session_state.user_words = user_words
+user_words = st.session_state.user_words
 
-# 确保 listen_answers 长度匹配
+# 确保 listen_answers 长度和 user_words 一致
 if len(st.session_state.listen_answers) != len(user_words):
     st.session_state.listen_answers = [""] * len(user_words)
 
@@ -612,14 +616,16 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
 
     if idx < len(user_words):
         current_word = user_words[idx]
+
+        # 播放音频
         audio_file = generate_tts_audio(current_word)
         st.audio(audio_file, format="audio/mp3")
         st.info(f"Word {idx + 1} of {len(user_words)}")
 
-        # 使用 session_state key 保存 radio 选择
+        # radio 绑定 session_state key
         choice_key = f"listen_choice_{idx}"
         if choice_key not in st.session_state:
-            st.session_state[choice_key] = ""  # 初始化
+            st.session_state[choice_key] = ""
 
         user_choice = st.radio(
             "Which word did you hear?",
@@ -627,9 +633,8 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
             key=choice_key
         )
 
-        # 提交按钮
+        # 点击 Submit
         if st.button("Submit", key=f"listen_submit_{idx}"):
-            # 保存到 listen_answers
             st.session_state.listen_answers[idx] = st.session_state[choice_key]
 
             # 更新分数
@@ -639,13 +644,11 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
             else:
                 st.error(f"Wrong. The correct answer was **{current_word}**.")
 
-            # 准备下一题
             st.session_state.listen_index += 1
             st.session_state.next_question = True
-            st.experimental_rerun()  # 刷新显示下一题
+            st.experimental_rerun()  # 刷新下一题
 
     else:
-        # 游戏结束
         st.success(f"Game finished! Your score: {st.session_state.listen_score}/{len(user_words)}")
 
         df = pd.DataFrame({
