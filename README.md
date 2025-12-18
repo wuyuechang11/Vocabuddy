@@ -91,6 +91,22 @@ streamlit run webversion.py
 Homepage
 ![Screenshot 1](images/Homepage.png)
 
+Read files
+
+![Screenshot 1](images/read files.png)
+
+Choose game mode
+
+![Screenshot 1](images/choose game mode.png)
+
+Play the game
+
+![Screenshot 1](images/paly the game.png)
+
+Game Result
+
+![Screenshot 1](images/Game result.png)
+
 ---
 
 ## 📌 Project Motivation & Academic Context
