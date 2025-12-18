@@ -31,9 +31,7 @@ def generate_tts_audio(word):
     return audio_path
 
 # ------------------- Baidu Translate API -------------------
-"""
-Facilitate English-to-Chinese translation for vocabulary reinforcement
-"""
+# Facilitate English-to-Chinese translation for vocabulary reinforcement
 
 APPID = "20251130002509027"  
 KEY = "GtRhonqtdzGpchMRJuCq"   
@@ -62,10 +60,7 @@ def baidu_translate(q, from_lang="auto", to_lang="zh"):
         return q
 
 # ------------------- Reading files -------------------
-"""
-Extract vocabulary words from various document formats
-Supported Formats: .txt, .csv, .docx, 
-"""
+#Extract vocabulary words from various document formats， Supported Formats: .txt, .csv, .docx, 
 
 def read_file(file):
     """Read words from txt/csv/docx/pdf file-like object (Streamlit UploadFile)."""
@@ -93,9 +88,7 @@ def read_file(file):
     return [w.strip() for w in words if w.strip()]
 
 # ------------------- reading from images -------------------
-"""
-Extract English text from images through OCR
-"""
+# Extract English text from images through OCR
 
 def read_image(image_file):
     """Run OCR via pytesseract; return list of words. If OCR fails, return []."""
@@ -112,15 +105,8 @@ def read_image(image_file):
         return []
     
 # ------------------- define Scramble Game -------------------
-"""
-Enhance spelling and word formation skills
-Core Algorithm:
-
-Randomly shuffles letters of target words
-Ensures scrambled version differs from original
-Validates user input against correct spelling
-Maintains sequential progression through vocabulary set
-"""
+# Enhance spelling and word formation skills
+#Core Algorithm: 1）Randomly shuffles letters of target words 2）Ensures scrambled version differs from original 3）Validates user input against correct spelling 4）Maintains sequential progression through vocabulary set
 
 def scramble_word(w):
     letters = list(w)
@@ -137,15 +123,8 @@ def scramble_word(w):
     return scrambled
 
 # ------------------- Matching Game helpers -------------------
-"""
- Reinforce semantic connections between English words and Chinese translations
-Design Features:
-
-Presents shuffled English words and Chinese translations
-Requires users to establish correct word-meaning pairs
-Employs optimized translation caching system
-Tracks matching accuracy and response patterns
-"""
+#Reinforce semantic connections between English words and Chinese translations
+#Design Features: 1）Presents shuffled English words and Chinese translations 2）Requires users to establish correct word-meaning pairs 3）Employs optimized translation caching system 4）Tracks matching accuracy and response patterns
 
 def generate_matching_game_once(user_words):
     """
@@ -225,15 +204,8 @@ def play_matching_game():
         st.session_state.game_started = False
         
 # ------------------- Fill-in-the-Blank Game -------------------
-"""
-Develop contextual understanding and word application skills
-Implementation:
-
-Generates example sentences containing target vocabulary
-Creates contextually appropriate blanks for word insertion
-Presents randomized multiple-choice options
-Reinforces vocabulary usage in authentic sentence structures
-"""
+# Develop contextual understanding and word application skills
+# Implementation:Generates example sentences containing target vocabulary，Creates contextually appropriate blanks for word insertion， Presents randomized multiple-choice options ，Reinforces vocabulary usage in authentic sentence structures
 
 def get_example_sentence(word):
     """Generate example sentences (can be replaced with dictionary API)"""
@@ -443,15 +415,8 @@ if st.session_state.game_started and st.session_state.game_mode == "Matching Gam
     play_matching_game()
 
 # ------------------- Listen & Choose -------------------
-"""
-Develop listening comprehension and word recognition skills
-Game Mechanics:
-
-Present audio pronunciation of target words
-users select correct word from 10 options
-tracks progress and scores in real0time
-provides detailed performance analytics post-game
-"""
+# Develop listening comprehension and word recognition skills
+# Game Mechanics: 1）Present audio pronunciation of target words 2）users select correct word from 10 options 3）tracks progress and scores in real0time 4）provides detailed performance analytics post-game
 
 if st.session_state.game_started and st.session_state.game_mode == "Listen & Choose":
     st.subheader("Listen & Choose Game")
