@@ -189,9 +189,9 @@ def play_matching_game():
         st.session_state.game_started = False
         
 # ------------------- scenario game -------------------
-def scenario_game(user_words):
-st.subheader("🧠 Word in Context")
-st.write("Choose the sentence that uses the word appropriately in context.")
+  def scenario_game(user_words):
+  st.subheader("🧠 Word in Context")
+  st.write("Choose the sentence that uses the word appropriately in context.")
 
 
 # -------- 场景模板 --------
