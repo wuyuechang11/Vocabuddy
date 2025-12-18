@@ -579,19 +579,27 @@ import pandas as pd
 from gtts import gTTS
 import io
 
-# -------------------- 初始化 --------------------
+# -------------------- 安全初始化 --------------------
+# 游戏模式和单词列表
 if "game_started" not in st.session_state:
     st.session_state.game_started = True
     st.session_state.game_mode = "Listen & Choose"
-    st.session_state.user_words = ["apple", "banana", "orange", "grape"]  # 示例单词
-    st.session_state.listen_index = 0
-    st.session_state.listen_score = 0
-    st.session_state.listen_answers = [""] * len(st.session_state.user_words)
-    st.session_state.next_question = False  # 控制自动跳题
 
-# 确保长度和单词数一致
-if len(st.session_state.listen_answers) != len(st.session_state.user_words):
-    st.session_state.listen_answers = [""] * len(st.session_state.user_words)
+# 确保 user_words 存在
+user_words = st.session_state.get("user_words", ["apple", "banana", "orange", "grape"])
+st.session_state.user_words = user_words
+
+# 初始化状态变量
+st.session_state.listen_index = st.session_state.get("listen_index", 0)
+st.session_state.listen_score = st.session_state.get("listen_score", 0)
+st.session_state.listen_answers = st.session_state.get(
+    "listen_answers", [""] * len(user_words)
+)
+st.session_state.next_question = st.session_state.get("next_question", False)
+
+# 确保 listen_answers 长度和 user_words 一致
+if len(st.session_state.listen_answers) != len(user_words):
+    st.session_state.listen_answers = [""] * len(user_words)
 
 # -------------------- TTS生成音频 --------------------
 def generate_tts_audio(word):
@@ -606,22 +614,23 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
     st.subheader("Listen & Choose Game")
 
     idx = st.session_state.listen_index
-    user_words = st.session_state.user_words
 
     if idx < len(user_words):
         current_word = user_words[idx]
+
+        # 播放音频
         audio_file = generate_tts_audio(current_word)
         st.audio(audio_file, format="audio/mp3")
         st.info(f"Word {idx + 1} of {len(user_words)}")
 
-        # 用户选择单词
+        # 用户选择
         user_choice = st.radio(
             "Which word did you hear?",
             options=user_words,
             key=f"listen_choice_{idx}"
         )
 
-        # 点击一次按钮即可切换下一题
+        # 点击一次即可切换下一题
         if st.button("Submit", key=f"listen_submit_{idx}") or st.session_state.next_question:
             # 安全写入答案
             if idx < len(st.session_state.listen_answers):
@@ -639,12 +648,13 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
             # 更新索引并标记自动跳题
             st.session_state.listen_index += 1
             st.session_state.next_question = True
-            st.experimental_rerun()  # 强制刷新显示下一题
+            st.experimental_rerun()  # 页面刷新显示下一题
 
     else:
         # 游戏结束
         st.success(f"Game finished! Your score: {st.session_state.listen_score}/{len(user_words)}")
 
+        # 显示结果表格
         df = pd.DataFrame({
             "Word": user_words,
             "Your Answer": st.session_state.listen_answers,
@@ -653,12 +663,13 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
         st.subheader("Your results")
         st.table(df)
 
-        # 重置游戏状态
+        # 重置状态
         st.session_state.game_started = False
         st.session_state.listen_index = 0
         st.session_state.listen_score = 0
         st.session_state.listen_answers = [""] * len(user_words)
         st.session_state.next_question = False
+
 
 
         
