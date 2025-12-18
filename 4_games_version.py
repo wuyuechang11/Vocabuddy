@@ -202,7 +202,7 @@ def play_matching_game():
         # end game
         st.session_state.game_started = False
         
-# ------------------- Merriam-Webster API -------------------
+# ------------------- Fill-in-the-blank Game -------------------
 MW_API_KEY = "b03334be-a55f-4416-9ff4-782b15a4dc77"  
 
 def clean_html_tags(text):
