@@ -89,7 +89,7 @@ pip install -r requirements.txt
 streamlit run webversion.py
 ```
 Homepage
-![Screenshot 1](images/homepage.png)
+![Screenshot 1](images/Homepage.png)
 
 ---
 
