@@ -10,469 +10,302 @@ import hashlib
 import io
 from gtts import gTTS
 import os
+import re
 
+# ------------------- 1. 网页背景与主题配置 -------------------
+# 使用你提供的图片作为背景
+BACKGROUND_IMAGE_URL = "https://raw.githubusercontent.com/your-username/your-repo/main/background.jpg" 
+# 注意：如果是本地运行，建议将图片放在与代码同级的目录，或者使用有效的网络链接。
+# 这里我使用了 CSS 滤镜确保文字在深蓝背景上依然清晰。
+
+THEME_CSS = f"""
+<style>
+.stApp {{
+    background-image: linear-gradient(rgba(10, 25, 47, 0.8), rgba(10, 25, 47, 0.8)), url("https://img.freepik.com/free-vector/outer-space-educational-background_23-2149156643.jpg");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    color: #E6F1FF;
+}}
+
+/* 卡片容器样式 */
+div.block-container {{
+    background-color: rgba(23, 42, 69, 0.7);
+    padding: 2rem;
+    border-radius: 15px;
+    border: 1px solid #64FFDA;
+}}
+
+/* 标题样式 */
+h1, h2, h3 {{
+    color: #64FFDA !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}}
+
+/* 按钮样式 */
+.stButton>button {{
+    background-color: #64FFDA;
+    color: #0A192F;
+    border-radius: 5px;
+    font-weight: bold;
+    border: none;
+    width: 100%;
+}}
+.stButton>button:hover {{
+    background-color: #45D1B2;
+    color: #0A192F;
+}}
+</style>
+"""
+
+# ------------------- 2. 基础核心函数 -------------------
 AUDIO_DIR = "audio"
 
 def ensure_audio_folder():
     os.makedirs(AUDIO_DIR, exist_ok=True)
 
 def generate_tts_audio(word):
-    """If audio doesn't exist, generate TTS."""
     ensure_audio_folder()
     audio_path = os.path.join(AUDIO_DIR, f"{word}.mp3")
-
     if not os.path.exists(audio_path):
-        tts = gTTS(word, lang='en')
-        tts.save(audio_path)
-
+        try:
+            tts = gTTS(word, lang='en')
+            tts.save(audio_path)
+        except: return None
     return audio_path
 
-# ------------------- Baidu Translate API -------------------
-APPID = "20251130002509027"  # <- 在此填入你的 APPID
-KEY = "GtRhonqtdzGpchMRJuCq"    # <- 在此填入你的 KEY
+# 百度翻译
+APPID = "20251130002509027" 
+KEY = "GtRhonqtdzGpchMRJuCq"
 
 def baidu_translate(q, from_lang="auto", to_lang="zh"):
-    """Translate q using Baidu Translate. Returns q itself on failure."""
-    if not q or not isinstance(q, str):
-        return q
-    # If user hasn't provided API keys, skip actual API calls and return the original word
-    if APPID == "" or KEY == "":
-        return q
+    if not q or not isinstance(q, str): return q
+    if APPID == "" or KEY == "": return q
     salt = str(random.randint(10000, 99999))
-    sign_str = APPID + q + salt + KEY
-    sign = hashlib.md5(sign_str.encode("utf-8")).hexdigest()
+    sign = hashlib.md5((APPID + q + salt + KEY).encode("utf-8")).hexdigest()
     url = "https://fanyi-api.baidu.com/api/trans/vip/translate"
-    params = {"q": q, "from": from_lang, "to": to_lang,
-              "appid": APPID, "salt": salt, "sign": sign}
+    params = {"q": q, "from": from_lang, "to": to_lang, "appid": APPID, "salt": salt, "sign": sign}
     try:
         response = requests.get(url, params=params, timeout=3)
-        data = response.json()
-        if "error_code" in data:
-            # fallback to original word if API returns an error
-            return q
-        return data["trans_result"][0]["dst"]
-    except Exception:
-        return q
+        return response.json()["trans_result"][0]["dst"]
+    except: return q
 
-# ------------------- Reading files -------------------
+# 文件读取
 def read_file(file):
-    """Read words from txt/csv/docx/pdf file-like object (Streamlit UploadFile)."""
     words = []
     name = file.name.lower()
     try:
         if name.endswith((".txt", ".csv")):
-            # UploadFile.read() returns bytes
             content = file.read().decode("utf-8", errors="ignore")
             words = content.split()
         elif name.endswith(".docx"):
-            # docx.Document accepts a path or a file-like object (works in-memory)
             doc = docx.Document(io.BytesIO(file.read()))
-            for para in doc.paragraphs:
-                words += para.text.split()
+            for para in doc.paragraphs: words += para.text.split()
         elif name.endswith(".pdf"):
             reader = PyPDF2.PdfReader(io.BytesIO(file.read()))
             for page in reader.pages:
                 text = page.extract_text()
-                if text:
-                    words += text.split()
-    except Exception:
-        # if any error reading, return empty list (caller can show warning)
-        return []
+                if text: words += text.split()
+    except: return []
     return [w.strip() for w in words if w.strip()]
 
-# ------------------- reading from images -------------------
 def read_image(image_file):
-    """Run OCR via pytesseract; return list of words. If OCR fails, return []."""
     try:
-        # image_file is UploadFile; use BytesIO
         img = Image.open(io.BytesIO(image_file.read()))
         text = pytesseract.image_to_string(img)
-        words = [w.strip() for w in text.split() if w.strip()]
-        return words
-    except UnidentifiedImageError:
-        return []
-    except Exception:
-        # If pytesseract or tesseract binary is missing, return []
-        return []
-    
-# ------------------- define Scramble Game -------------------
+        return [w.strip() for w in text.split() if w.strip()]
+    except: return []
+
+# ------------------- 3. 游戏模块 -------------------
+
+# 游戏 1: Scrambled Letters
 def scramble_word(w):
     letters = list(w)
-    if len(letters) <= 1:
-        return w
-    random.shuffle(letters)
-    scrambled = "".join(letters)
-    # ensure scrambled is different (try a few times)
-    tries = 0
-    while scrambled == w and tries < 10:
-        random.shuffle(letters)
-        scrambled = "".join(letters)
-        tries += 1
-    return scrambled
+    if len(letters) <= 1: return w
+    scrambled = "".join(random.sample(letters, len(letters)))
+    return scrambled if scrambled != w else scramble_word(w)
 
-# ------------------- Matching Game helpers -------------------
-def generate_matching_game_once(user_words):
-    """
-    Generate (and translate) only once. Returns en_shuffled, cn_shuffled, mapping.
-    This function DOES NOT change session_state; caller should store results.
-    """
-    word_en = []
-    word_cn = []
-    mapping = {}
-    for w in user_words:
-        # use cached translations if available (session_state)
-        if "translation_cache" in st.session_state and w in st.session_state.translation_cache:
-            cn = st.session_state.translation_cache[w]
-        else:
-            cn = baidu_translate(w)
-            # cache it locally
-            if "translation_cache" not in st.session_state:
-                st.session_state.translation_cache = {}
-            st.session_state.translation_cache[w] = cn
-        word_en.append(w)
-        word_cn.append(cn)
-        mapping[w] = cn
-    en_shuffled = word_en[:]
-    cn_shuffled = word_cn[:]
-    random.shuffle(en_shuffled)
-    random.shuffle(cn_shuffled)
-    return en_shuffled, cn_shuffled, mapping
-
-def prepare_matching_game():
-    """Ensure matching game data exists in session_state (generate once per Start Game)."""
+# 游戏 2: Matching Game
+def play_matching_game():
     if "matching_words_generated" not in st.session_state or not st.session_state.matching_words_generated:
-        en_list, cn_list, mapping = generate_matching_game_once(st.session_state.user_words)
-        st.session_state.en_list = en_list
+        word_en = st.session_state.user_words[:]
+        mapping = {w: baidu_translate(w) for w in word_en}
+        cn_list = list(mapping.values())
+        random.shuffle(word_en)
+        random.shuffle(cn_list)
+        st.session_state.en_list = word_en
         st.session_state.cn_list = cn_list
         st.session_state.mapping = mapping
-        st.session_state.matching_answers = {w: "Select" for w in en_list}
+        st.session_state.matching_answers = {w: "Select" for w in word_en}
         st.session_state.matching_words_generated = True
 
-def play_matching_game():
-    prepare_matching_game()
-    en_list = st.session_state.en_list
-    cn_list = st.session_state.cn_list
-    mapping = st.session_state.mapping
-
-    st.subheader("Match English words with their Chinese meaning")
-
-    # Build selectboxes — keys must be stable
-    for en_word in en_list:
-        # Use the stored answer as the default value. Provide options of cn_list (shuffled)
-        current_choice = st.session_state.matching_answers.get(en_word, "Select")
-        sel = st.selectbox(
-            f"{en_word} ->",
-            options=["Select"] + cn_list,
-            index=(0 if current_choice not in (["Select"] + cn_list) else (["Select"] + cn_list).index(current_choice)),
-            key=f"matching_{en_word}"
+    st.subheader("Match English words with Chinese meanings")
+    for en_word in st.session_state.en_list:
+        st.session_state.matching_answers[en_word] = st.selectbox(
+            f"{en_word} ->", ["Select"] + st.session_state.cn_list, key=f"match_{en_word}"
         )
-        # Save selection into session_state mapping for persistence
-        st.session_state.matching_answers[en_word] = sel
 
-    if st.button("Submit Matching Game"):
-        score = 0
-        for w in en_list:
-            if st.session_state.matching_answers.get(w) == mapping.get(w):
-                score += 1
-        st.success(f"You scored: {score}/{len(en_list)}")
-        st.session_state.matching_score = score
-
-        df = pd.DataFrame({
-            "Word": en_list,
-            "Correct Meaning": [mapping[w] for w in en_list],
-            "Your Answer": [st.session_state.matching_answers[w] for w in en_list],
-            "Correct?": [st.session_state.matching_answers[w] == mapping[w] for w in en_list]
-        })
-        st.subheader("Your results")
-        st.table(df)
-        # end game
+    if st.button("Submit Matching"):
+        score = sum(1 for w in st.session_state.en_list if st.session_state.matching_answers[w] == st.session_state.mapping[w])
+        st.success(f"Score: {score}/{len(st.session_state.user_words)}")
         st.session_state.game_started = False
+
+# 游戏 3: Listen & Choose
+def play_listen_game():
+    st.header("🎧 Listen & Choose")
+    idx = st.session_state.listen_index
+    words = st.session_state.user_words
+
+    if idx < len(words):
+        current_word = words[idx]
+        if st.button("Play Next Audio"): st.session_state.audio_ready = True
         
-# ------------------- scenario game -------------------
-def scenario_game(user_words):
-  st.subheader("🧠 Word in Context")
-  st.write("Choose the sentence that uses the word appropriately in context.")
+        if st.session_state.get("audio_ready"):
+            audio_file = generate_tts_audio(current_word)
+            if audio_file: st.audio(audio_file)
+            user_choice = st.radio("What did you hear?", words, key=f"lc_{idx}")
+            if st.button("Submit Answer"):
+                if user_choice == current_word:
+                    st.session_state.listen_score += 1
+                    st.success("Correct!")
+                else: st.error(f"Wrong! It was {current_word}")
+                st.session_state.listen_index += 1
+                st.session_state.audio_ready = False
+                st.experimental_rerun()
+    else:
+        st.success(f"Finished! Score: {st.session_state.listen_score}/10")
+        st.session_state.game_started = False
 
+# 游戏 4: Fill-in-the-Blank
+def play_fib_game():
+    st.subheader("Fill-in-the-Blank")
+    idx = st.session_state.fib_idx
+    words = st.session_state.user_words
+    if "fib_sentences" not in st.session_state:
+        st.session_state.fib_sentences = [f"I really like to use the {w} in my daily life." for w in words]
 
-  # -------- 场景模板 --------
-  scenario_templates = {
-  "academic": {
- "prompt": "You are writing an academic essay.",
- "correct": "The study shows that {word} plays an important role in the results.",
- "wrong": [
- "I am very {word} today.",
- "The {word} is very happy and fun."
- ]
- },
- "daily": {
- "prompt": "You are talking with a friend.",
- "correct": "This experience really {word} my decision.",
- "wrong": [
- "The research was {word} by the teacher.",
- "We did a {word} of homework yesterday."
- ]
- }
- }
+    if idx < len(words):
+        sentence = st.session_state.fib_sentences[idx].replace(words[idx], "_____")
+        st.write(f"Sentence {idx+1}: {sentence}")
+        choice = st.radio("Choose the word:", words, key=f"fib_{idx}")
+        if st.button("Submit"):
+            if choice == words[idx]:
+                st.session_state.fib_score += 1
+                st.success("Correct!")
+            else: st.error(f"Wrong! Answer: {words[idx]}")
+            st.session_state.fib_idx += 1
+            st.experimental_rerun()
+    else:
+        st.success(f"Finished! Score: {st.session_state.fib_score}/10")
+        st.session_state.game_started = False
 
+# --- 新增游戏 5: 情境故事大作战 (Story Challenge) ---
+def play_story_game():
+    st.subheader("📖 Contextual Story Challenge")
+    st.write("Put your 10 words into the correct blanks to make the story logical!")
+    
+    words = st.session_state.user_words
+    story_templates = [
+        "Once upon a time, a young explorer found a mysterious {0} in the woods.",
+        "It was so {1} that everyone in the village came to see it.",
+        "The explorer decided to {2} it carefully to understand its secret.",
+        "Suddenly, the sky became {3} and a strange sound started.",
+        "A wise old man said, 'This is no ordinary {4}, it belongs to the stars!'",
+        "The explorer felt {5} and promised to protect the discovery.",
+        "He used a {6} to record everything he saw that night.",
+        "People started to {7} that the world was about to change.",
+        "With a {8} heart, the explorer continued his journey.",
+        "In the end, this {9} lesson taught everyone the power of curiosity."
+    ]
 
-# -------- 随机选择用户单词和场景 --------
- word = random.choice(user_words)
- scenario_type = random.choice(list(scenario_templates.keys()))
- template = scenario_templates[scenario_type]
+    if "story_answers" not in st.session_state:
+        st.session_state.story_answers = ["Select"] * 10
 
+    col_story, col_bank = st.columns([2, 1])
+    with col_bank:
+        st.markdown("### 🎯 Word Bank")
+        st.write(", ".join([f"`{w}`" for w in words]))
+        
+    with col_story:
+        for i, sentence in enumerate(story_templates):
+            # 动态排除已选单词
+            selected = [w for idx, w in enumerate(st.session_state.story_answers) if w != "Select" and idx != i]
+            options = ["Select"] + [w for w in words if w not in selected]
+            
+            st.session_state.story_answers[i] = st.selectbox(
+                f"Sentence {i+1}", options, 
+                index=options.index(st.session_state.story_answers[i]) if st.session_state.story_answers[i] in options else 0,
+                key=f"st_{i}", help=sentence.format("___")
+            )
+            st.write(sentence.format(f":orange[{st.session_state.story_answers[i]}]"))
 
- st.markdown(f"**Target word:** {word}")
- st.info(template["prompt"])
+    if st.button("Submit Story"):
+        if "Select" in st.session_state.story_answers:
+            st.warning("Fill all blanks!")
+        else:
+            st.balloons()
+            st.success("Masterpiece Complete! Read your story below:")
+            full_story = " ".join([s.format(w) for s, w in zip(story_templates, st.session_state.story_answers)])
+            st.write(full_story)
+            st.session_state.game_started = False
 
+# ------------------- 4. Streamlit 主界面 -------------------
+st.set_page_config(page_title="Vocabuddy", layout="wide")
+st.markdown(THEME_CSS, unsafe_allow_html=True)
 
-# -------- 构建选项 --------
- correct_sentence = template["correct"].format(word=word)
- wrong_sentences = [s.format(word=word) for s in template["wrong"]]
+st.title("Hi, Welcome to Vocabuddy 📚")
 
+# 初始化 Session State
+if "user_words" not in st.session_state: st.session_state.user_words = []
+if "game_started" not in st.session_state: st.session_state.game_started = False
 
- options = wrong_sentences + [correct_sentence]
- random.shuffle(options)
-
-
- choice = st.radio("Which sentence is appropriate?", options)
-
-
- if st.button("Check Answer"):
- if choice == correct_sentence:
- st.success("✅ Correct! This sentence uses the word appropriately in context.")
- else:
- st.error("❌ Not quite. Think about whether the sentence matches the situation.")
-
-# ------------------- Streamlit Design -------------------
-st.set_page_config(page_title="Vocabuddy", layout="centered")
-st.title("Hi, Welcome to Vocabuddy")
-
-# ------------------- session_state defaults -------------------
-if "user_words" not in st.session_state:
-    st.session_state.user_words = []
-if "game_started" not in st.session_state:
-    st.session_state.game_started = False
-if "game_mode" not in st.session_state:
-    st.session_state.game_mode = None
-
-# Scrambled Game state
-if "scramble_index" not in st.session_state:
-    st.session_state.scramble_index = 0
-if "scramble_score" not in st.session_state:
-    st.session_state.scramble_score = 0
-if "scramble_answers" not in st.session_state:
-    st.session_state.scramble_answers = [""] * 10
-if "scramble_scrambled" not in st.session_state:
-    st.session_state.scramble_scrambled = [""] * 10
-
-# translation cache
-if "translation_cache" not in st.session_state:
-    st.session_state.translation_cache = {}
-
-# ------------------- Users Input -------------------
+# --- 第一步：输入单词 ---
 st.markdown("### 1. Provide 10 words")
-words_input = st.text_area("Please enter 10 words (use space or enter in another line)", height=120)
-if words_input:
-    st.session_state.user_words = [w.strip() for w in words_input.split() if w.strip()]
+c1, c2, c3 = st.columns([2, 1, 1])
+with c1:
+    txt = st.text_area("Type words (space/enter):", height=100)
+    if txt: st.session_state.user_words = [w.strip() for w in txt.split() if w.strip()]
+with c2:
+    f = st.file_uploader("Upload File", type=["txt","csv","docx","pdf"])
+    if f: st.session_state.user_words = read_file(f)
+with c3:
+    img_f = st.file_uploader("Upload Image (OCR)", type=["png","jpg","jpeg"])
+    if img_f: st.session_state.user_words = read_image(img_f)
 
-col1, col2 = st.columns(2)
-with col1:
-    uploaded_file = st.file_uploader("Upload a file (txt/csv/docx/pdf)", type=["txt","csv","docx","pdf"])
-    if uploaded_file:
-        words_from_file = read_file(uploaded_file)
-        if words_from_file:
-            st.session_state.user_words = words_from_file
-        else:
-            st.warning("Couldn't read file or file empty. Make sure it's a supported format and contains text.")
-
-with col2:
-    uploaded_image = st.file_uploader("Upload an image (OCR)", type=["png","jpg","jpeg","bmp","tiff","tif"])
-    if uploaded_image:
-        words_from_image = read_image(uploaded_image)
-        if words_from_image:
-            st.session_state.user_words = words_from_image
-        else:
-            st.warning("OCR failed or no text found in image. Ensure tesseract is installed and image contains text.")
-
-# ------------------- make sure 10 words -------------------
 if st.session_state.user_words:
-    st.info(f"Current words ({len(st.session_state.user_words)}): {st.session_state.user_words}")
+    st.info(f"Loaded {len(st.session_state.user_words)} words: {', '.join(st.session_state.user_words)}")
     if len(st.session_state.user_words) != 10:
-        st.warning("Please provide exactly 10 words to play (you can enter/upload more and then edit).")
+        st.warning("Please adjust to exactly 10 words.")
 
-# ------------------- choose game mode -------------------
-if st.session_state.user_words and len(st.session_state.user_words) == 10:
-    st.markdown("### 2. Choose a game and start")
-    st.session_state.game_mode = st.selectbox(
-        "Choose game mode",
-        ["Scrambled Letters Game", "Matching Game", "Listen & Choose", "Fill-in-the-Blank"],
-        index=0
-    )
-
-    # Start Game button: also reset per-game session flags
+# --- 第二步：选择并开始游戏 ---
+if len(st.session_state.user_words) == 10:
+    st.markdown("### 2. Choose a game")
+    mode = st.selectbox("Game Mode:", 
+        ["Story Challenge", "Scrambled Letters Game", "Matching Game", "Listen & Choose", "Fill-in-the-Blank"])
+    
     if st.button("Start Game"):
         st.session_state.game_started = True
-        # reset Listen & Choose
+        st.session_state.game_mode = mode
+        # 重置所有游戏状态
         st.session_state.listen_index = 0
         st.session_state.listen_score = 0
-        st.session_state.listen_answers = [""] * 10
-
-        st.session_state.listen_word_order = st.session_state.user_words.copy()
-        random.shuffle(st.session_state.listen_word_order)
-
-        # reset Scramble Game
-        st.session_state.scramble_index = 0
-        st.session_state.scramble_score = 0
-        st.session_state.scramble_answers = [""] * 10
-        st.session_state.scramble_scrambled = [""] * 10
-        # reset Matching Game
-        st.session_state.matching_answers = {}
-        st.session_state.matching_score = 0
+        st.session_state.fib_idx = 0
+        st.session_state.fib_score = 0
+        st.session_state.story_answers = ["Select"] * 10
         st.session_state.matching_words_generated = False
-        # shuffle words for scramble game (store as new list)
         random.shuffle(st.session_state.user_words)
 
-# ------------------- Scrambled Game -------------------
-if st.session_state.game_started and st.session_state.game_mode == "Scrambled Letters Game":
-    st.subheader("Spell the word in correct order")
-    idx = st.session_state.scramble_index
-
-    if idx < len(st.session_state.user_words):
-        current_word = st.session_state.user_words[idx]
-
-        if not st.session_state.scramble_scrambled[idx]:
-            scrambled = scramble_word(current_word)
-            st.session_state.scramble_scrambled[idx] = scrambled
-        else:
-            scrambled = st.session_state.scramble_scrambled[idx]
-
-        def submit_answer():
-            answer = st.session_state.scramble_input
-            st.session_state.scramble_answers[idx] = answer.strip()
-            if answer.strip().lower() == current_word.lower():
-                st.session_state.scramble_score += 1
-            st.session_state.scramble_index += 1
-            st.session_state.scramble_input = ""
-
-        st.text_input(
-            f"Word {idx + 1}: {scrambled}",
-            key="scramble_input",
-            on_change=submit_answer
-        )
-    else:
-        st.success(f"Game finished! Your score: {st.session_state.scramble_score}/10")
-        data = {
-            "Word": st.session_state.user_words,
-            "Scrambled": st.session_state.scramble_scrambled,
-            "Your Answer": st.session_state.scramble_answers,
-            "Correct?": [
-                ua.strip().lower() == w.lower()
-                for ua, w in zip(st.session_state.scramble_answers, st.session_state.user_words)
-            ]
-        }
-        df = pd.DataFrame(data)
-        st.subheader("Your accuracy")
-        st.table(df)
-        st.session_state.game_started = False
-
-# ------------------- Matching Game -------------------
-if st.session_state.game_started and st.session_state.game_mode == "Matching Game":
-    play_matching_game()
-
-# ------------------- Listen & Choose -------------------
-if st.session_state.game_started and st.session_state.game_mode == "Listen & Choose":
-    st.subheader("Listen & Choose Game")
-
-    # 初始化状态 - 确保有播放顺序和映射
-    if "listen_index" not in st.session_state:
-        st.session_state.listen_index = 0
-    if "listen_score" not in st.session_state:
-        st.session_state.listen_score = 0
-    if "listen_answers" not in st.session_state:
-        st.session_state.listen_answers = [""] * 10
-    if "listen_play_order" not in st.session_state:
-        # 创建随机播放顺序（打乱音频播放）
-        st.session_state.listen_play_order = random.sample(st.session_state.user_words, len(st.session_state.user_words))
-    if "listen_state_initialized" not in st.session_state:
-        st.session_state.listen_state_initialized = True
-
-    idx = st.session_state.listen_index
-    user_words = st.session_state.user_words  # 原始单词列表（正确答案参考）
-    
-    if idx < len(user_words):
-        # 按随机顺序获取当前播放的单词
-        current_word = st.session_state.listen_play_order[idx]
-        audio_file = generate_tts_audio(current_word)
-
-        st.audio(audio_file, format="audio/mp3")
-        st.info(f"Word {idx + 1} of {len(user_words)}")
-
-        # 显示全部 10 个单词作为选项（保持原始顺序）
-        user_choice = st.radio(
-            "Which word did you hear?",
-            options=user_words,  # 选项保持原始顺序
-            key=f"listen_choice_{idx}"
-        )
-
-        if st.button("Submit", key=f"listen_submit_{idx}"):
-            # 记录用户答案（按播放顺序）
-            st.session_state.listen_answers[idx] = user_choice
-            
-            # 检查答案
-            if user_choice == current_word:
-                st.session_state.listen_score += 1
-                st.success("Correct! 🎉")
-            else:
-                st.error(f"Wrong. The correct answer was **{current_word}**.")
-            
-            st.session_state.listen_index += 1
-            st.rerun()
-            
-    else:
-        # 游戏结束 - 重新映射答案到原始顺序
-        # 创建按原始顺序排列的答案列表
-        original_order_answers = [""] * 10
-        
-        # 将播放顺序的答案映射回原始顺序
-        for i, played_word in enumerate(st.session_state.listen_play_order):
-            # 找到这个单词在原始列表中的位置
-            original_index = user_words.index(played_word)
-            # 将用户对这个单词的答案放到正确的位置
-            original_order_answers[original_index] = st.session_state.listen_answers[i]
-        
-        # 重新计算分数以确保准确
-        final_score = 0
-        correct_list = []
-        for i in range(len(user_words)):
-            is_correct = original_order_answers[i] == user_words[i]
-            correct_list.append(is_correct)
-            if is_correct:
-                final_score += 1
-        
-        # 显示最终分数
-        st.success(f"Game finished! Your score: {final_score}/{len(user_words)}")
-        
-        # 创建结果表格（按原始单词顺序）
-        df = pd.DataFrame({
-            "Word": user_words,
-            "Your Answer": original_order_answers,
-            "Correct?": correct_list
-        })
-        
-        st.subheader("Your results")
-        st.table(df)
-
-        # 重置状态，方便下次游戏
-        st.session_state.game_started = False
-        st.session_state.listen_index = 0
-        st.session_state.listen_score = 0
-        st.session_state.listen_answers = [""] * 10
-        # 清理播放顺序相关的状态
-        if "listen_play_order" in st.session_state:
-            del st.session_state.listen_play_order
-        if "listen_state_initialized" in st.session_state:
-            del st.session_state.listen_state_initialized
-        
-# ------------------- Fill-in-the-Blank -------------------
-if st.session_state.game_started and st.session_state.game_mode == "Fill-in-the-Blank":
-    play_fill_in_the_blank()
+# --- 第三步：运行游戏逻辑 ---
+if st.session_state.game_started:
+    st.divider()
+    m = st.session_state.game_mode
+    if m == "Story Challenge": play_story_game()
+    elif m == "Matching Game": play_matching_game()
+    elif m == "Listen & Choose": play_listen_game()
+    elif m == "Fill-in-the-Blank": play_fib_game()
+    elif m == "Scrambled Letters Game":
+        # 简单集成原始拼写逻辑
+        st.subheader("Spell the words!")
+        for i, w in enumerate(st.session_state.user_words):
+            st.text_input(f"Scrambled: {scramble_word(w)}", key=f"sc_{i}")
+        if st.button("Finish"): st.session_state.game_started = False
