@@ -12,9 +12,7 @@ from gtts import gTTS
 import os
 
 # ------------------- TTS Audio Generation -------------------
-"""
-use gTTS (Google Text-to-Speech) library to generate English pronunciation audio for vocabulary words 
-"""
+#use gTTS (Google Text-to-Speech) library to generate English pronunciation audio for vocabulary words
 
 AUDIO_DIR = "audio"
 
