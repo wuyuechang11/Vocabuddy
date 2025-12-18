@@ -97,15 +97,15 @@ Read files
 
 Choose game mode
 
-![Screenshot 1](images/choose game mode.png)
+![Screenshot 2](images/choose game mode.png)
 
 Play the game
 
-![Screenshot 1](images/paly the game.png)
+![Screenshot 3](images/paly the game.png)
 
 Game Result
 
-![Screenshot 1](images/Game result.png)
+![Screenshot 4](images/Game result.png)
 
 ---
 
