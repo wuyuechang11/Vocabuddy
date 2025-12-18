@@ -576,10 +576,8 @@ if st.session_state.game_started and st.session_state.game_mode == "Matching Gam
 # ------------------- Listen & Choose -------------------
 import streamlit as st
 import pandas as pd
-
-def generate_tts_audio(word):
-    # 占位音频 URL，替换成你的 TTS 生成函数
-    return f"https://fake-audio-url/{word}.mp3"
+from gtts import gTTS
+import io
 
 # -------------------- 初始化 --------------------
 if "game_started" not in st.session_state:
@@ -587,13 +585,20 @@ if "game_started" not in st.session_state:
     st.session_state.game_mode = "Listen & Choose"
     st.session_state.user_words = ["apple", "banana", "orange", "grape"]  # 示例单词
 
-# 使用 get() 保证默认值，避免 AttributeError
 st.session_state.listen_index = st.session_state.get("listen_index", 0)
 st.session_state.listen_score = st.session_state.get("listen_score", 0)
 st.session_state.listen_answers = st.session_state.get(
     "listen_answers", [""] * len(st.session_state.user_words)
 )
 st.session_state.next_question = st.session_state.get("next_question", False)
+
+# -------------------- TTS生成音频 --------------------
+def generate_tts_audio(word):
+    tts = gTTS(text=word, lang='en')
+    audio_bytes = io.BytesIO()
+    tts.write_to_fp(audio_bytes)
+    audio_bytes.seek(0)
+    return audio_bytes
 
 # -------------------- 游戏逻辑 --------------------
 if st.session_state.game_started and st.session_state.game_mode == "Listen & Choose":
@@ -604,6 +609,8 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
 
     if idx < len(user_words):
         current_word = user_words[idx]
+
+        # 生成可播放的音频字节流
         audio_file = generate_tts_audio(current_word)
         st.audio(audio_file, format="audio/mp3")
         st.info(f"Word {idx + 1} of {len(user_words)}")
@@ -614,6 +621,7 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
             key=f"listen_choice_{idx}"
         )
 
+        # 点击一次即可切换下一题
         if st.button("Submit", key=f"listen_submit_{idx}") or st.session_state.next_question:
             st.session_state.listen_answers[idx] = user_choice
             if user_choice == current_word:
