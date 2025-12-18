@@ -21,9 +21,9 @@ Vocabuddy currently includes four main game modes:
 * **Listen & Choose Game**
   Focus on *listening and pronunciation*. Users listen to an audio pronunciation and choose the correct word.
 
-* **Context-Based Usage Game** (replacement for traditional fill-in-the-blank)
-  Train word *usage* by selecting the most appropriate word for a given context, avoiding unstable free-text input evaluation.
-
+* **Fill-in-the-Blank Usage Game**
+  Learners practice word usage by completing a sentence with the correct target word. Example sentences are retrieved via the Merriam-Webster Dictionary API.
+(If the API does not return a suitable example sentence for a target word, the system automatically applies a fallback sentence to ensure gameplay continuity and consistency across all words.)
 ---
 
 ## 📁 Input Options
@@ -105,7 +105,7 @@ Vocabuddy was developed as a course project and collaborative learning experienc
 
 * The UI design is minimal and focuses on functionality over aesthetics
 * Vocabulary usage practice is limited to predefined formats
-* Dictionary API coverage depends on external services
+* External dictionary API coverage and rate limits may affect availability of example sentences
 
 ---
 
@@ -113,7 +113,7 @@ Vocabuddy was developed as a course project and collaborative learning experienc
 
 * Enhanced UI/UX design
 * More adaptive difficulty levels
-* Better contextual usage evaluation
+* Expand usage practice to include multiple-sentence or discourse-level contexts
 * User progress tracking and analytics
 
 ---
