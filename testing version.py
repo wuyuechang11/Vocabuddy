@@ -574,52 +574,47 @@ if st.session_state.game_started and st.session_state.game_mode == "Matching Gam
     play_matching_game()
 
 # ------------------- Listen & Choose -------------------
-# 检查游戏是否已开始，且模式为 "Listen & Choose"
 if st.session_state.get("game_started") and st.session_state.get("game_mode") == "Listen & Choose":
     st.subheader("Listen & Choose Game")
 
-    # 初始化游戏状态变量
+    # 初始化状态变量
     if "listen_index" not in st.session_state:
-        st.session_state.listen_index = 0  # 当前进行到第几题
+        st.session_state.listen_index = 0
     if "listen_score" not in st.session_state:
-        st.session_state.listen_score = 0  # 当前得分
+        st.session_state.listen_score = 0
     if "listen_answers" not in st.session_state:
-        st.session_state.listen_answers = [""] * 10  # 用户答案列表，默认长度10
+        st.session_state.listen_answers = [""] * len(st.session_state.get("user_words", []))
 
-    # 获取当前题目索引和单词列表
     idx = st.session_state.listen_index
     user_words = st.session_state.get("user_words", [])
 
-    # 游戏进行中
     if idx < len(user_words):
-        current_word = user_words[idx]  # 当前单词
-        audio_file = generate_tts_audio(current_word)  # 生成TTS音频
+        current_word = user_words[idx]
+        audio_file = generate_tts_audio(current_word)
+        st.audio(audio_file, format="audio/mp3")
+        st.info(f"Word {idx + 1} of {len(user_words)}")
 
-        st.audio(audio_file, format="audio/mp3")  # 播放音频
-        st.info(f"Word {idx + 1} of {len(user_words)}")  # 显示题号
+        # 使用 form 包裹单选和提交按钮
+        with st.form(key=f"listen_form_{idx}"):
+            user_choice = st.radio(
+                "Which word did you hear?",
+                options=user_words,
+                key=f"listen_choice_{idx}"
+            )
+            submitted = st.form_submit_button("Submit")
 
-        # 用户选择单词
-        user_choice = st.radio(
-            "Which word did you hear?",
-            options=user_words,
-            key=f"listen_choice_{idx}"
-        )
+            if submitted:
+                st.session_state.listen_answers[idx] = user_choice
+                if user_choice == current_word:
+                    st.session_state.listen_score += 1
+                    st.success("Correct! 🎉")
+                else:
+                    st.error(f"Wrong. The correct answer was **{current_word}**.")
+                st.session_state.listen_index += 1  # 点击一次就切换下一题
 
-        # 提交按钮
-        if st.button("Submit", key=f"listen_submit_{idx}"):
-            st.session_state.listen_answers[idx] = user_choice  # 保存答案
-            if user_choice == current_word:
-                st.session_state.listen_score += 1  # 答对加分
-                st.success("Correct! 🎉")
-            else:
-                st.error(f"Wrong. The correct answer was **{current_word}**.")
-            st.session_state.listen_index += 1  # 进入下一题
-
-    # 游戏结束
     else:
         st.success(f"Game finished! Your score: {st.session_state.listen_score}/{len(user_words)}")
 
-        # 显示结果表
         df = pd.DataFrame({
             "Word": user_words,
             "Your Answer": st.session_state.listen_answers,
@@ -632,7 +627,8 @@ if st.session_state.get("game_started") and st.session_state.get("game_mode") ==
         st.session_state.game_started = False
         st.session_state.listen_index = 0
         st.session_state.listen_score = 0
-        st.session_state.listen_answers = [""] * 10
+        st.session_state.listen_answers = [""] * len(user_words)
+
 
         
 # ------------------- Fill-in-the-Blank  -------------------
