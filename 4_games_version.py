@@ -224,7 +224,7 @@ def get_example_sentence_mw(word):
         r = requests.get(url)
         data = r.json()
         if not data or not isinstance(data[0], dict):
-            return f"DEFAULT SENTECT: I LIKE TO {word} EVRY DAY."
+            return f"DEFAULT SENTECT: I LIKE TO {word} EVERY DAY."
         defs = data[0].get("def", [])
         for d in defs:
             sseq = d.get("sseq", [])
@@ -238,10 +238,10 @@ def get_example_sentence_mw(word):
                                 raw_sentence = vis_list[0]["t"]
                                 cleaned_sentence = clean_html_tags(raw_sentence)
                                 return cleaned_sentence
-        return f"DEFAULT SENTECT: I LIKE TO {word} EVRY DAY."
+        return f"DEFAULT SENTECT: I LIKE TO {word} EVERY DAY."
     except Exception as e:
         print(f"Error getting example sentence for {word}: {e}")
-        return f"DEFAULT SENTECT: I LIKE TO {word} EVRY DAY."
+        return f"DEFAULT SENTECT: I LIKE TO {word} EVERY DAY."
 
 def create_blank_sentence(word, sentence):
     """Replace the target word with blanks in the sentence, handling variations"""
