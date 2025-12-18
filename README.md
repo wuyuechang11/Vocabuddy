@@ -89,7 +89,7 @@ pip install -r requirements.txt
 streamlit run webversion.py
 ```
 Homepage
-![App Background](images/background.png)
+![App Background](images/homepage.png)
 
 ---
 
