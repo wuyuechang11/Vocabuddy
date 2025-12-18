@@ -597,7 +597,7 @@ if "next_question" not in st.session_state:
 
 user_words = st.session_state.user_words
 
-# 确保 listen_answers 长度和 user_words 一致
+# 确保 listen_answers 长度匹配
 if len(st.session_state.listen_answers) != len(user_words):
     st.session_state.listen_answers = [""] * len(user_words)
 
@@ -622,10 +622,10 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
         st.audio(audio_file, format="audio/mp3")
         st.info(f"Word {idx + 1} of {len(user_words)}")
 
-        # radio 绑定 session_state key
+        # radio 绑定 session_state key，并确保默认值合法
         choice_key = f"listen_choice_{idx}"
-        if choice_key not in st.session_state:
-            st.session_state[choice_key] = ""
+        if choice_key not in st.session_state or st.session_state[choice_key] not in user_words:
+            st.session_state[choice_key] = user_words[0]  # 默认选择第一个单词
 
         user_choice = st.radio(
             "Which word did you hear?",
@@ -635,6 +635,7 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
 
         # 点击 Submit
         if st.button("Submit", key=f"listen_submit_{idx}"):
+            # 保存答案
             st.session_state.listen_answers[idx] = st.session_state[choice_key]
 
             # 更新分数
@@ -644,11 +645,13 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
             else:
                 st.error(f"Wrong. The correct answer was **{current_word}**.")
 
+            # 自动切换下一题
             st.session_state.listen_index += 1
             st.session_state.next_question = True
-            st.experimental_rerun()  # 刷新下一题
+            st.experimental_rerun()  # 刷新页面显示下一题
 
     else:
+        # 游戏结束
         st.success(f"Game finished! Your score: {st.session_state.listen_score}/{len(user_words)}")
 
         df = pd.DataFrame({
@@ -665,6 +668,7 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
         st.session_state.listen_score = 0
         st.session_state.listen_answers = [""] * len(user_words)
         st.session_state.next_question = False
+
 
         
 # ------------------- Fill-in-the-Blank  -------------------
