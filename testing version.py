@@ -189,59 +189,59 @@ def play_matching_game():
         st.session_state.game_started = False
         
 # ------------------- scenario game -------------------
-  def scenario_game(user_words):
+def scenario_game(user_words):
   st.subheader("🧠 Word in Context")
   st.write("Choose the sentence that uses the word appropriately in context.")
 
 
-# -------- 场景模板 --------
-scenario_templates = {
-"academic": {
-"prompt": "You are writing an academic essay.",
-"correct": "The study shows that {word} plays an important role in the results.",
-"wrong": [
-"I am very {word} today.",
-"The {word} is very happy and fun."
-]
-},
-"daily": {
-"prompt": "You are talking with a friend.",
-"correct": "This experience really {word} my decision.",
-"wrong": [
-"The research was {word} by the teacher.",
-"We did a {word} of homework yesterday."
-]
-}
-}
+  # -------- 场景模板 --------
+  scenario_templates = {
+  "academic": {
+ "prompt": "You are writing an academic essay.",
+ "correct": "The study shows that {word} plays an important role in the results.",
+ "wrong": [
+ "I am very {word} today.",
+ "The {word} is very happy and fun."
+ ]
+ },
+ "daily": {
+ "prompt": "You are talking with a friend.",
+ "correct": "This experience really {word} my decision.",
+ "wrong": [
+ "The research was {word} by the teacher.",
+ "We did a {word} of homework yesterday."
+ ]
+ }
+ }
 
 
 # -------- 随机选择用户单词和场景 --------
-word = random.choice(user_words)
-scenario_type = random.choice(list(scenario_templates.keys()))
-template = scenario_templates[scenario_type]
+ word = random.choice(user_words)
+ scenario_type = random.choice(list(scenario_templates.keys()))
+ template = scenario_templates[scenario_type]
 
 
-st.markdown(f"**Target word:** {word}")
-st.info(template["prompt"])
+ st.markdown(f"**Target word:** {word}")
+ st.info(template["prompt"])
 
 
 # -------- 构建选项 --------
-correct_sentence = template["correct"].format(word=word)
-wrong_sentences = [s.format(word=word) for s in template["wrong"]]
+ correct_sentence = template["correct"].format(word=word)
+ wrong_sentences = [s.format(word=word) for s in template["wrong"]]
 
 
-options = wrong_sentences + [correct_sentence]
-random.shuffle(options)
+ options = wrong_sentences + [correct_sentence]
+ random.shuffle(options)
 
 
-choice = st.radio("Which sentence is appropriate?", options)
+ choice = st.radio("Which sentence is appropriate?", options)
 
 
-if st.button("Check Answer"):
-if choice == correct_sentence:
-st.success("✅ Correct! This sentence uses the word appropriately in context.")
-else:
-st.error("❌ Not quite. Think about whether the sentence matches the situation.")
+ if st.button("Check Answer"):
+ if choice == correct_sentence:
+ st.success("✅ Correct! This sentence uses the word appropriately in context.")
+ else:
+ st.error("❌ Not quite. Think about whether the sentence matches the situation.")
 
 # ------------------- Streamlit Design -------------------
 st.set_page_config(page_title="Vocabuddy", layout="centered")
