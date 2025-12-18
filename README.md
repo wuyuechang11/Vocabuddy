@@ -93,19 +93,18 @@ Homepage
 
 Read files
 
-![Screenshot 1](images/read files.png)
+![Screenshot 2](images/read files.png)
 
 Choose game mode
 
-![Screenshot 2](images/choose game mode.png)
+![Screenshot 3](images/choose game mode.png)
 
 Play the game
-
-![Screenshot 3](images/paly the game.png)
+![Screenshot 4](images/play the game.png)
 
 Game Result
 
-![Screenshot 4](images/Game result.png)
+![Screenshot 5](images/Game Result.png)
 
 ---
 
