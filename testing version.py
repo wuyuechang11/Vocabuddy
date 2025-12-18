@@ -584,13 +584,14 @@ if "game_started" not in st.session_state:
     st.session_state.game_started = True
     st.session_state.game_mode = "Listen & Choose"
     st.session_state.user_words = ["apple", "banana", "orange", "grape"]  # 示例单词
+    st.session_state.listen_index = 0
+    st.session_state.listen_score = 0
+    st.session_state.listen_answers = [""] * len(st.session_state.user_words)
+    st.session_state.next_question = False  # 控制自动跳题
 
-st.session_state.listen_index = st.session_state.get("listen_index", 0)
-st.session_state.listen_score = st.session_state.get("listen_score", 0)
-st.session_state.listen_answers = st.session_state.get(
-    "listen_answers", [""] * len(st.session_state.user_words)
-)
-st.session_state.next_question = st.session_state.get("next_question", False)
+# 确保长度和单词数一致
+if len(st.session_state.listen_answers) != len(st.session_state.user_words):
+    st.session_state.listen_answers = [""] * len(st.session_state.user_words)
 
 # -------------------- TTS生成音频 --------------------
 def generate_tts_audio(word):
@@ -609,33 +610,41 @@ if st.session_state.game_started and st.session_state.game_mode == "Listen & Cho
 
     if idx < len(user_words):
         current_word = user_words[idx]
-
-        # 生成可播放的音频字节流
         audio_file = generate_tts_audio(current_word)
         st.audio(audio_file, format="audio/mp3")
         st.info(f"Word {idx + 1} of {len(user_words)}")
 
+        # 用户选择单词
         user_choice = st.radio(
             "Which word did you hear?",
             options=user_words,
             key=f"listen_choice_{idx}"
         )
 
-        # 点击一次即可切换下一题
+        # 点击一次按钮即可切换下一题
         if st.button("Submit", key=f"listen_submit_{idx}") or st.session_state.next_question:
-            st.session_state.listen_answers[idx] = user_choice
+            # 安全写入答案
+            if idx < len(st.session_state.listen_answers):
+                st.session_state.listen_answers[idx] = user_choice
+            else:
+                st.session_state.listen_answers.append(user_choice)
+
+            # 更新分数
             if user_choice == current_word:
                 st.session_state.listen_score += 1
                 st.success("Correct! 🎉")
             else:
                 st.error(f"Wrong. The correct answer was **{current_word}**.")
 
+            # 更新索引并标记自动跳题
             st.session_state.listen_index += 1
             st.session_state.next_question = True
-            st.experimental_rerun()
+            st.experimental_rerun()  # 强制刷新显示下一题
 
     else:
+        # 游戏结束
         st.success(f"Game finished! Your score: {st.session_state.listen_score}/{len(user_words)}")
+
         df = pd.DataFrame({
             "Word": user_words,
             "Your Answer": st.session_state.listen_answers,
