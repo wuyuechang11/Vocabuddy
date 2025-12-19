@@ -528,7 +528,7 @@ if st.session_state.user_words and len(st.session_state.user_words) == 10:
         random.shuffle(st.session_state.user_words)
 
 # ------------------- Scrambled Game -------------------
-if st.session_state.game_started and st.session_state.game_mode == "Scrambled Letters Game":
+if st.session_state.get("game_started") and st.session_state.get("game_mode") == "Scrambled Letters Game":
     st.subheader("Spell the word in correct order")
     idx = st.session_state.scramble_index
 
