@@ -412,21 +412,18 @@ if st.session_state.get("game_started", False) and st.session_state.get("game_mo
         
         user_choice = None
         for i, word in enumerate(user_words):
-            col_idx = i % 2  # 0表示第一列，1表示第二列
+            col_idx = i % 2  
             with cols[col_idx]:
-                # 使用radio或者button风格的选择
                 if st.button(
                     word,
                     key=f"word_btn_{idx}_{i}",
                     use_container_width=True,
                     type="primary" if st.session_state.get(f"selected_{idx}") == word else "secondary"
                 ):
-                    # 记录用户选择
                     user_choice = word
                     st.session_state[f"selected_{idx}"] = word
                     st.rerun()
         
-        # 显示当前选择的单词（如果有）
         if st.session_state.get(f"selected_{idx}"):
             st.markdown(f"**Your current selection:** `{st.session_state[f'selected_{idx}']}`")
         
@@ -439,26 +436,21 @@ if st.session_state.get("game_started", False) and st.session_state.get("game_mo
                         key=f"Listen_submit_{idx}", 
                         disabled=submit_disabled,
                         use_container_width=True):
-                # 获取用户选择
                 user_choice = st.session_state.get(f"selected_{idx}", "")
                 
                 st.session_state.Listen_answers[idx] = user_choice
                 
-                # 检查答案
                 if user_choice == correct_word:
                     st.session_state.Listen_score += 1
                     st.success(f"✅ Correct! **'{correct_word}'** is right!")
                 else:
                     st.error(f"❌ Wrong. You selected **'{user_choice}'**. The correct answer was **'{correct_word}'**.")
                 
-                # 清除当前选择
                 if f"selected_{idx}" in st.session_state:
                     del st.session_state[f"selected_{idx}"]
                 
-                # 显示下一题按钮（等待用户点击）
                 st.session_state.waiting_for_next = True
         
-        # 如果等待下一题，显示Next按钮
         if st.session_state.get("waiting_for_next", False):
             with col2:
                 if st.button("➡️ Next Word", 
@@ -468,7 +460,6 @@ if st.session_state.get("game_started", False) and st.session_state.get("game_mo
                     st.session_state.waiting_for_next = False
                     st.rerun()
     else:
-        # 游戏结束：显示结果（统一 Listen & Choose 风格）
         df_data = []
         for i in range(len(user_words)):
             audio_word = st.session_state.Listen_played_words[i]
@@ -708,42 +699,32 @@ def create_blank_sentence(word, sentence):
     
     cleaned_sentence = clean_html_tags(sentence)
     
-    # 策略1：优先尝试匹配单词的基本形式（不区分大小写）
-    # 使用正则表达式确保匹配整个单词
     pattern_base = re.compile(rf'\b{re.escape(word)}\b', re.IGNORECASE)
     if pattern_base.search(cleaned_sentence):
-        # 找到实际出现在句子中的形式（保持原有大小写）
         match = pattern_base.search(cleaned_sentence)
         actual_word = cleaned_sentence[match.start():match.end()]
         return cleaned_sentence.replace(actual_word, "_____")
     
-    # 策略2：如果基本形式没找到，尝试更灵活的匹配
-    # 移除可能的标点符号进行匹配
     word_lower = word.lower()
     words_in_sentence = re.findall(r'\b\w+\b', cleaned_sentence)
     
     for i, w in enumerate(words_in_sentence):
         if w.lower() == word_lower:
-            # 构建正则表达式来匹配这个具体的单词（包括可能的标点）
             pattern_specific = re.compile(rf'\b{re.escape(w)}\b')
             match = pattern_specific.search(cleaned_sentence)
             if match:
-                # 获取匹配位置
                 start, end = match.start(), match.end()
-                # 创建空白句子
                 return cleaned_sentence[:start] + "_____" + cleaned_sentence[end:]
     
-    # 策略3：如果还是没找到，检查单词的变体（如复数、时态变化）
-    # 简单的变体检测规则
     variants = [
-        word + 's',  # 复数
-        word + 'es',  # 复数变体
-        word + 'ed',  # 过去式
-        word + 'ing',  # 进行时
-        word + 'er',  # 比较级
-        word + 'est',  # 最高级
-        word[:-1] + 'ies' if word.endswith('y') else None,  # 复数变体
-        word + 'd' if not word.endswith('e') else None,  # 过去式变体
+        word + 's',  
+        word + 'es', 
+        word + 'ed',  
+        word + 'ing',  
+        word + 'er',  
+        word + 'est',  
+        word[:-1] + 'ies' if word.endswith('y') else None,  
+        word + 'd' if not word.endswith('e') else None,  
     ]
     
     for variant in variants:
@@ -754,118 +735,91 @@ def create_blank_sentence(word, sentence):
                 actual_variant = cleaned_sentence[match.start():match.end()]
                 return cleaned_sentence.replace(actual_variant, "_____")
     
-    # 策略4：如果以上都失败，尝试部分匹配
     if word_lower in cleaned_sentence.lower():
-        # 找到单词在句子中的位置（不区分大小写）
         start = cleaned_sentence.lower().find(word_lower)
         end = start + len(word)
-        # 确保我们替换的是整个单词，而不是部分单词
-        # 检查边界字符
         if (start == 0 or not cleaned_sentence[start-1].isalnum()) and \
            (end >= len(cleaned_sentence) or not cleaned_sentence[end].isalnum()):
             return cleaned_sentence[:start] + "_____" + cleaned_sentence[end:]
     
-    # 策略5：如果都没有匹配到，手动创建包含空白的句子
     return cleaned_sentence + f" (Fill in: _____)"
     
 def play_fill_blank_game():
-    # ______ Fill-in-the-Blank Game (改进版) ______
     if st.session_state.get("game_started", False) and st.session_state.get("game_mode") == "Fill-in-the-Blank Game":
         st.subheader("📝 Fill-in-the-Blank Game")
         
-        # 显示提示信息
         st.info(
             'When no dictionary example is available, a default sentence will be used '
             '("I LIKE TO ___ EVERY DAY.").'
         )
         
-        # 初始化游戏状态
         if "fb_index" not in st.session_state:
             st.session_state.fb_index = 0
             st.session_state.fb_score = 0
-            st.session_state.fb_total_questions = 0  # 只计算非fallback的题目数量
+            st.session_state.fb_total_questions = 0  
             st.session_state.fb_answers = [""] * 10
             st.session_state.fb_correct_answers = []
             st.session_state.fb_blanked_sentences = []
             st.session_state.fb_original_sentences = []
-            st.session_state.fb_is_fallback = []  # 新增：记录是否为fallback句子
-            st.session_state.fb_played_order = []  # 存储打乱的问题顺序
+            st.session_state.fb_is_fallback = []  
+            st.session_state.fb_played_order = []  
             st.session_state.fb_waiting_for_next = False
         
-        # 获取当前索引和单词列表
         idx = st.session_state.fb_index
-        user_words = st.session_state.fill_blank_words  # 使用专门为填空游戏准备的单词列表
+        user_words = st.session_state.fill_blank_words  
         
-        # 如果是第一题，初始化游戏数据
         if idx == 0 and len(st.session_state.fb_correct_answers) == 0:
-            # 1. 存储正确答案（原始单词列表）
             st.session_state.fb_correct_answers = user_words.copy()
             
-            # 2. 为每个单词获取例句并创建填空句子
             st.session_state.fb_blanked_sentences = []
             st.session_state.fb_original_sentences = []
-            st.session_state.fb_is_fallback = []  # 初始化fallback记录
-            st.session_state.fb_total_questions = 0  # 重置非fallback题目计数
+            st.session_state.fb_is_fallback = []  
+            st.session_state.fb_total_questions = 0 
             
             st.info("⏳ Generating example sentences...")
             progress_bar = st.progress(0)
             
             for i, word in enumerate(user_words):
-                # 获取例句
                 sentence = get_example_sentence_mw(word)
                 st.session_state.fb_original_sentences.append(sentence)
                 
-                # 创建填空句子
                 blanked_sentence = create_blank_sentence(word, sentence)
                 st.session_state.fb_blanked_sentences.append(blanked_sentence)
                 
-                # 检查是否为fallback句子
                 is_fallback = "DEFAULT SENTENCE" in sentence.upper() or "DEFAULT SENTENCE" in blanked_sentence.upper()
                 st.session_state.fb_is_fallback.append(is_fallback)
                 
-                # 如果不是fallback句子，增加题目计数
                 if not is_fallback:
                     st.session_state.fb_total_questions += 1
                 
-                # 更新进度条
                 progress_bar.progress((i + 1) / len(user_words))
             
             progress_bar.empty()
             
-            # 3. 创建打乱的问题顺序
             shuffled_order = list(range(len(user_words)))
             random.shuffle(shuffled_order)
             st.session_state.fb_played_order = shuffled_order
         
-        # 检查游戏是否结束
         if idx < len(user_words):
-            # 获取当前题目信息
-            current_order = st.session_state.fb_played_order[idx]  # 当前问题的索引（打乱顺序）
+            current_order = st.session_state.fb_played_order[idx] 
             current_sentence = st.session_state.fb_blanked_sentences[current_order]
             correct_word = st.session_state.fb_correct_answers[current_order]
             original_sentence = st.session_state.fb_original_sentences[current_order]
             is_fallback = st.session_state.fb_is_fallback[current_order]
             
-            # 显示是否为fallback句子（用图标表示）
             if is_fallback:
                 st.info(f"📝 Question {idx + 1} of {len(user_words)} (🎯 Default Sentence - Not Counted)")
             else:
                 st.info(f"📝 Question {idx + 1} of {len(user_words)}")
             
-            # 显示填空句子
             st.markdown(f"### {current_sentence}")
-            
-            # 显示所有10个单词作为选项（保持原始顺序）
             st.write("**Select the correct word to fill in the blank:**")
             
-            # 创建两列布局显示10个选项
-            cols = st.columns(2)  # 创建两列
+            cols = st.columns(2) 
             
-            # 将10个单词分配到两列
             for i, word in enumerate(user_words):
-                col_idx = i % 2  # 0表示第一列，1表示第二列
+                col_idx = i % 2  
                 with cols[col_idx]:
-                    # 使用button风格的选择
                     is_selected = st.session_state.get(f"fb_selected_{idx}") == word
                     button_type = "primary" if is_selected else "secondary"
                     
@@ -875,18 +829,14 @@ def play_fill_blank_game():
                         use_container_width=True,
                         type=button_type
                     ):
-                        # 记录用户选择
                         st.session_state[f"fb_selected_{idx}"] = word
                         st.rerun()
             
-            # 显示当前选择的单词（如果有）
             if st.session_state.get(f"fb_selected_{idx}"):
                 st.markdown(f"**Your current selection:** `{st.session_state[f'fb_selected_{idx}']}`")
             
-            # 提交当前答案的按钮
             col1, col2 = st.columns(2)
             
-            # 如果没有选择，禁用Submit按钮
             submit_disabled = st.session_state.get(f"fb_selected_{idx}") is None
             
             with col1:
@@ -894,19 +844,15 @@ def play_fill_blank_game():
                             key=f"fb_submit_{idx}", 
                             disabled=submit_disabled,
                             use_container_width=True):
-                    # 获取用户选择
                     user_choice = st.session_state.get(f"fb_selected_{idx}", "")
                     
-                    # 保存答案
                     st.session_state.fb_answers[current_order] = user_choice
                     
-                    # 显示原始句子（展开状态）
                     with st.expander("📖 Show original sentence"):
                         st.write(f"**Original sentence:** {original_sentence}")
                         if is_fallback:
                             st.warning("⚠️ This is a default sentence - not counted in final score")
                     
-                    # 检查答案（只有非fallback句子才计分）
                     if user_choice.lower() == correct_word.lower():
                         if not is_fallback:
                             st.session_state.fb_score += 1
@@ -919,14 +865,11 @@ def play_fill_blank_game():
                         else:
                             st.error(f"❌ Wrong. You selected **'{user_choice}'**. The correct answer was **'{correct_word}'**. (Default sentence - not scored)")
                     
-                    # 清除当前选择
                     if f"fb_selected_{idx}" in st.session_state:
                         del st.session_state[f"fb_selected_{idx}"]
                     
-                    # 显示下一题按钮（等待用户点击）
                     st.session_state.fb_waiting_for_next = True
             
-            # 如果等待下一题，显示Next按钮
             if st.session_state.get("fb_waiting_for_next", False):
                 with col2:
                     if st.button("➡️ Next Question", 
@@ -936,8 +879,6 @@ def play_fill_blank_game():
                         st.session_state.fb_waiting_for_next = False
                         st.rerun()
         else:
-            # 游戏结束：显示结果（统一 Listen & Choose 风格）
-            # 有效题目：排除默认句子（fallback）
             valid_questions = st.session_state.fb_total_questions
             score_note = None
             if valid_questions > 0:
