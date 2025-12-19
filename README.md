@@ -1,5 +1,6 @@
 # Vocabuddy
 link ：https://vocabuddy-m2as5vrgtbq3jsdxqu2dpp.streamlit.app/
+
 Vocabuddy is an interactive vocabulary learning web application built with **Python** and **Streamlit**, developed as a **course project**. Many English learners lack guided, engaging practice for self-study and teachers also face chellenge to offer extra support for learners practice outside the classroom. Vocabuddy is designed to help English learners practice vocabulary through multiple game-based activities that explicitly target **form, sound, meaning, and usage**, drawing on core principles from vocabulary acquisition and linguistics.
 
 The app allows users to upload their own word lists (or extract words from documents) and immediately practice them through engaging mini-games.
