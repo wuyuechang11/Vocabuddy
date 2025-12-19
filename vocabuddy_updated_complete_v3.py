@@ -341,7 +341,7 @@ if st.button("Start Game"):
     st.session_state.game_started = True
     original_words = st.session_state.user_words.copy()
     
-    # 为各个游戏创建单词列表副本
+    # create copies of word list for 4 games 
     st.session_state.scramble_words = original_words.copy()
     random.shuffle(st.session_state.scramble_words)
     
@@ -360,13 +360,13 @@ if st.button("Start Game"):
     st.session_state.matching_score = 0
     st.session_state.matching_words_generated = False
     
-    # ⭐️ 新增：reset Listen & Choose Game ⭐️
+    # reset Listen & Choose Game 
     st.session_state.Listen_index = 0
     st.session_state.Listen_score = 0
     st.session_state.Listen_answers = [""] * 10
-    st.session_state.Listen_played_words = []  # 清空播放顺序
-    st.session_state.Listen_options_list = []  # 清空选项列表
-    st.session_state.waiting_for_next = False  # 新增状态
+    st.session_state.Listen_played_words = []  
+    st.session_state.Listen_options_list = []  
+    st.session_state.waiting_for_next = False  
     
     # reset Fill-in-the-Blank Game
     st.session_state.fb_index = 0
@@ -380,7 +380,6 @@ if st.button("Start Game"):
     st.session_state.fb_played_order = []
     st.session_state.fb_waiting_for_next = False
         
-        # 清除所有选择状态
     for key in list(st.session_state.keys()):
         if key.startswith("selected_") or key.startswith("fb_selected_"):
             del st.session_state[key]
@@ -391,36 +390,28 @@ if st.button("Start Game"):
 if st.session_state.get("game_started", False) and st.session_state.get("game_mode") == "Listen & Choose":
     st.subheader("🎧 Listen & Choose Game")
     
-    # 获取当前索引和单词列表
     idx = st.session_state.Listen_index
-    user_words = st.session_state.listen_words  # 使用专门为听音游戏准备的单词列表
+    user_words = st.session_state.listen_words  
     
-    # 如果是第一题，初始化打乱的播放顺序
     if idx == 0 and len(st.session_state.Listen_played_words) == 0:
-        # 创建打乱的播放顺序
         shuffled_words = user_words.copy()
         random.shuffle(shuffled_words)
         st.session_state.Listen_played_words = shuffled_words
     
-    # 检查游戏是否结束
     if idx < len(user_words):
-        # 获取当前题目信息
-        current_audio_word = st.session_state.Listen_played_words[idx]  # 音频播放的单词（打乱顺序）
-        correct_word = current_audio_word  # 正确答案就是播放的单词
+        current_audio_word = st.session_state.Listen_played_words[idx]  
+        correct_word = current_audio_word  
         
         st.info(f"🎵 Word {idx + 1} of {len(user_words)}")
         
-        # 生成并播放音频（自动播放）
         audio_file = generate_tts_audio(current_audio_word)
         st.audio(audio_file, format="audio/mp3", autoplay=True)
         
-        # 显示所有10个单词作为选项（保持原始顺序）
+        # show 10 words 
         st.write("**Select the word you heard:**")
         
-        # 创建两列布局显示10个选项
-        cols = st.columns(2)  # 创建两列
+        cols = st.columns(2) 
         
-        # 将10个单词分配到两列
         user_choice = None
         for i, word in enumerate(user_words):
             col_idx = i % 2  # 0表示第一列，1表示第二列
@@ -632,14 +623,12 @@ def play_matching_game():
     # Build selectboxes — keys must be stable
     for en_word in en_list:
         current_choice = st.session_state.matching_answers.get(en_word, "Select")
-        # 不使用 on_change 或 rerun
         sel = st.selectbox(
             f"{en_word} ->",
             options=["Select"] + cn_list,
             index=(0 if current_choice not in (["Select"] + cn_list) else (["Select"] + cn_list).index(current_choice)),
             key=f"matching_{en_word}"
         )
-        # 保存选择状态到 session_state
         st.session_state.matching_answers[en_word] = sel
 
     st.markdown("---")
@@ -683,13 +672,9 @@ MW_API_KEY = "b03334be-a55f-4416-9ff4-782b15a4dc77"
 def clean_html_tags(text):
     """Clean HTML-like tags from Merriam-Webster API response"""
     import re
-    # 移除 {wi}...{/wi} 标签
     text = re.sub(r'\{/?wi\}', '', text)
-    # 移除 {it}...{/it} 标签
     text = re.sub(r'\{/?it\}', '', text)
-    # 移除其他常见标签
     text = re.sub(r'\{/?[^}]+?\}', '', text)
-    # 清理多余的空格
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
@@ -703,7 +688,6 @@ def get_example_sentence_mw(word):
         r = requests.get(url)
         data = r.json()
         if not data or not isinstance(data[0], dict):
-            # 使用清理后的默认句子
             return f"DEFAULT SENTECT: I LIKE TO {word} EVERY DAY."
         defs = data[0].get("def", [])
         for d in defs:
@@ -716,21 +700,17 @@ def get_example_sentence_mw(word):
                             vis_list = item[1]
                             if vis_list:
                                 raw_sentence = vis_list[0]["t"]
-                                # 清理HTML标签
                                 cleaned_sentence = clean_html_tags(raw_sentence)
                                 return cleaned_sentence
-        # 如果没有找到例句，返回清理后的默认句子
-        return f"DEFAULT SENTECT: I LIKE TO {word} EVRY DAY."
+        return f"DEFAULT SENTECT: I LIKE TO {word} EVERY DAY."
     except Exception as e:
-        # 打印错误信息用于调试
         print(f"Error getting example sentence for {word}: {e}")
-        return f"DEFAULT SENTECT: I LIKE TO {word} EVRY DAY."
+        return f"DEFAULT SENTECT: I LIKE TO {word} EVERY DAY."
 
 def create_blank_sentence(word, sentence):
     """Replace the target word with blanks in the sentence, handling variations"""
     import re
     
-    # 确保句子已经清理过HTML标签
     cleaned_sentence = clean_html_tags(sentence)
     
     # 策略1：优先尝试匹配单词的基本形式（不区分大小写）
