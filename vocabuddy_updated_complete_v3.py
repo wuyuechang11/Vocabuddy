@@ -13,7 +13,11 @@ from gtts import gTTS
 import os
 
 # ============ initialization: session_state ============
-''' initialize four games'''
+# Streamlit re-runs the entire script on every widget interaction.
+# We use st.session_state to persist multi-step game progress (index/score/answers)
+# across reruns, so the app behaves like a real interactive web app
+# restarting on every click.
+
 
 if "user_words" not in st.session_state:
     st.session_state.user_words = []
@@ -74,6 +78,11 @@ if "translation_cache" not in st.session_state:
     st.session_state.translation_cache = {}
 
 # ------------------- generate audio ------------------------
+# This module handles text-to-speech audio generation for vocabulary words.
+# It creates MP3 audio files using gTTS (Google Text-to-Speech) and caches them locally to avoid regenerating audio for the same words. This enables the Listen
+# & Choose game where users hear word pronunciations and select the correct word.
+# The audio files are stored in a dedicated folder for efficient reuse.
+
 AUDIO_DIR = "audio"
 
 def ensure_audio_folder():
@@ -91,6 +100,13 @@ def generate_tts_audio(word):
     return audio_path
 
 # ------------------- Baidu Translate API -------------------
+# This module provides translation functionality from English to Chinese using
+# Baidu Translate API. It supports the Matching Game by translating vocabulary
+# words into Chinese definitions. The module includes caching to avoid repeated
+# API calls for the same words and gracefully falls back to the original word
+# if the API call fails. This ensures the game can continue even without internet
+# connectivity or valid API credentials.
+
 APPID = "20251130002509027"  
 KEY = "GtRhonqtdzGpchMRJuCq"   
 
@@ -117,7 +133,13 @@ def baidu_translate(q, from_lang="auto", to_lang="zh"):
     except Exception:
         return q
 
-# ------------------- End Screen (Reusable) -------------------
+# ------------------- End Screen -------------------
+# This module provides reusable game completion screens with consistent UI elements.
+# It displays final scores, accuracy metrics, and detailed results tables while
+# offering standardized navigation options to replay, switch games, or return to
+# the main menu. The modular design avoids code duplication across different games
+# and ensures uniform user experience regardless of which game was played.
+
 def _clear_keys_with_prefix(prefix: str):
     for k in list(st.session_state.keys()):
         if k.startswith(prefix):
@@ -384,7 +406,14 @@ if st.button("Start Game"):
         
     st.rerun()
 
-# ______ 1. Listen & Choose  ______
+# -------------------- 1. Listen & Choose ----------------------
+# This module implements the "Listen & Choose" vocabulary game where users hear
+# audio pronunciations and select the matching word from options. It manages audio
+# playback, word shuffling, answer submission, and scoring. The game progresses
+# through all 10 words, providing immediate feedback on each selection and tracking
+# cumulative performance. Audio is generated dynamically using TTS and played
+# automatically to simulate real listening comprehension exercises.
+
 if st.session_state.get("game_started", False) and st.session_state.get("game_mode") == "Listen & Choose":
     st.subheader("🎧 Listen & Choose Game")
     
@@ -487,8 +516,13 @@ if st.session_state.get("game_started", False) and st.session_state.get("game_mo
         )
 
 # ------------------- 2. Scrambled Letters Game -------------------
-# Enhance spelling and word formation skills
-# Core Algorithm: 1）Randomly shuffles letters of target words 2）Validates user input against correct spelling 3）Maintains sequential progression through vocabulary set
+# This module implements the "Scrambled Letters Game" where users unscramble
+# jumbled letters to form correct English words. Each target word's letters are
+# randomly shuffled, ensuring the scrambled version differs from the original.
+# Users type their answers in a text input field, and the system validates
+# spelling against the correct word. The game progresses sequentially through
+# all vocabulary words, tracking correct answers and displaying scrambled forms
+# that refresh automatically for each new word.
 
 def scramble_word(w):
     letters = list(w)
@@ -560,6 +594,13 @@ if st.session_state.get("game_started") and st.session_state.get("game_mode") ==
         )
 
 # ------------------- 3. Matching Game helpers -------------------
+# This module provides the core functionality for the "Matching Game" where users
+# pair English vocabulary words with their Chinese translations. It handles word
+# translation using Baidu API, shuffles both English and Chinese lists independently,
+# and manages user selection through interactive dropdown menus. The system tracks
+# matches in real-time and calculates scores based on correct pairings between
+# words and their corresponding translations.
+
 def generate_matching_game_once(user_words):
     """
     Generate (and translate) only once. Returns en_shuffled, cn_shuffled, mapping.
@@ -653,6 +694,13 @@ def play_matching_game():
 
         
 # ------------------- Merriam-Webster API -------------------
+# This module implements contextual vocabulary practice by retrieving real example
+# sentences from Merriam-Webster API and creating cloze exercises. For each target
+# word, it fetches authentic usage examples, replaces the target word with blanks,
+# and presents them as completion tasks. The system includes intelligent fallback
+# mechanisms for words without available examples and distinguishes between
+# API-sourced and default sentences in scoring.
+
 MW_API_KEY = "b03334be-a55f-4416-9ff4-782b15a4dc77"  
 
 def clean_html_tags(text):
