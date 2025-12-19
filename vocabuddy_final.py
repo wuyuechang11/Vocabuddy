@@ -107,8 +107,7 @@ def generate_tts_audio(word):
 # if the API call fails. This ensures the game can continue even without internet
 # connectivity or valid API credentials.
 
-APPID = "20251130002509027"  
-KEY = "GtRhonqtdzGpchMRJuCq"   
+  
 
 def baidu_translate(q, from_lang="auto", to_lang="zh"):
     """Translate q using Baidu Translate. Returns q itself on failure."""
