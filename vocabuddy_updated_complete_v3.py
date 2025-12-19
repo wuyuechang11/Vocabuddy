@@ -91,8 +91,8 @@ def generate_tts_audio(word):
     return audio_path
 
 # ------------------- Baidu Translate API -------------------
-APPID = "20251130002509027"  # <- 在此填入你的 APPID
-KEY = "GtRhonqtdzGpchMRJuCq"    # <- 在此填入你的 KEY
+APPID = "20251130002509027"  
+KEY = "GtRhonqtdzGpchMRJuCq"   
 
 def baidu_translate(q, from_lang="auto", to_lang="zh"):
     """Translate q using Baidu Translate. Returns q itself on failure."""
@@ -497,7 +497,7 @@ if st.session_state.get("game_started", False) and st.session_state.get("game_mo
 
 # ------------------- 2. Scrambled Letters Game -------------------
 # Enhance spelling and word formation skills
-# Core Algorithm: 1）Randomly shuffles letters of target words 2）Ensures scrambled version differs from original 3）Validates user input against correct spelling 4）Maintains sequential progression through vocabulary set
+# Core Algorithm: 1）Randomly shuffles letters of target words 2）Validates user input against correct spelling 3）Maintains sequential progression through vocabulary set
 
 def scramble_word(w):
     letters = list(w)
