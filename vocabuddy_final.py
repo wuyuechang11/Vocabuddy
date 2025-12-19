@@ -107,11 +107,11 @@ def generate_tts_audio(word):
 # if the API call fails. This ensures the game can continue even without internet
 # connectivity or valid API credentials.
 
-import os
 import streamlit as st
 
-APPID = st.secrets.get("BAIDU_APPID", os.getenv("BAIDU_APPID", ""))
-KEY   = st.secrets.get("BAIDU_KEY",   os.getenv("BAIDU_KEY",   ""))
+APPID = st.secrets["BAIDU_APPID"]
+KEY = st.secrets["BAIDU_KEY"]
+
 
 if not APPID or not KEY:
     st.warning("Missing BAIDU_APPID / BAIDU_KEY. Please set secrets or environment variables.")
