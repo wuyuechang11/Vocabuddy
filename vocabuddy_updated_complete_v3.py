@@ -117,8 +117,6 @@ def baidu_translate(q, from_lang="auto", to_lang="zh"):
     except Exception:
         return q
 
-# ------------------- Reading files -------------------
-
 # ------------------- End Screen (Reusable) -------------------
 def _clear_keys_with_prefix(prefix: str):
     for k in list(st.session_state.keys()):
@@ -258,7 +256,7 @@ def reset_fill_blank_game():
     st.session_state.fb_waiting_for_next = False
     _clear_keys_with_prefix("fb_selected_")
 
-
+# ------------------- read files -------------------
 def read_file(file):
     """Read words from txt/csv/docx/pdf file-like object (Streamlit UploadFile)."""
     words = []
@@ -432,10 +430,8 @@ if st.session_state.get("game_started", False) and st.session_state.get("game_mo
         if st.session_state.get(f"selected_{idx}"):
             st.markdown(f"**Your current selection:** `{st.session_state[f'selected_{idx}']}`")
         
-        # 提交当前答案的按钮
         col1, col2 = st.columns(2)
         
-        # 如果没有选择，禁用Submit按钮
         submit_disabled = st.session_state.get(f"selected_{idx}") is None
         
         with col1:
@@ -446,7 +442,6 @@ if st.session_state.get("game_started", False) and st.session_state.get("game_mo
                 # 获取用户选择
                 user_choice = st.session_state.get(f"selected_{idx}", "")
                 
-                # 保存答案
                 st.session_state.Listen_answers[idx] = user_choice
                 
                 # 检查答案
